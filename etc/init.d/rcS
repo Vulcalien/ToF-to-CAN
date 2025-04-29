@@ -4,7 +4,7 @@ echo "ToF-L4 Board @ ARSLAB"
 mount -t binfs /bin
 #mount -t procfs /proc
 
-set TOF_ID 2
+set TOF_ID 1
 
 dds start
 
