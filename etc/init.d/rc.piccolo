@@ -1,0 +1,72 @@
+
+echo "Running configuration for robot 'piccolo'"
+
+#
+# Parameters for Piccolo 2018
+#
+
+echo "Configuring geometry"
+# set MC_MAXSPEED 1200
+# set MC_MINSPEED 50
+# set MC_ACCEL 900
+# set MC_DECEL 900
+set MC_MAXSPEED 700
+#set MC_MAXSPEED 400
+set MC_MINSPEED 50
+set MC_ACCEL 800
+set MC_DECEL 800
+set MC_KP 200
+set MC_KI 1000
+set MC_KD 0
+set MC_BUMP_SPEED 80
+# initial values
+#set MC_RADIUS_LEFT 20.367948325
+#set MC_RADIUS_RIGHT  20.493801537
+
+# valori calcolati con la dima
+set MC_RADIUS_LEFT    20.38923073
+set MC_RADIUS_RIGHT   20.54109192
+
+set MC_WHEEL_BASE 184.02670288
+
+
+set MC_BUMPER 4  # SW-4
+set MC_ALT_BUMPER 4 # SW-4
+
+#
+# encoder 512 tick/giro in quad,
+# riduttore (70304.0 / 441.0) ~=  159
+# fattore = 360/((70304.0 / 441.0)*512*4)
+#
+
+set AXIS no
+#set AXIS_0_RATIO -0.0011026332961140192
+#set AXIS_0_RATIO -0.0011095
+#set AXIS_0_KP 110
+#set AXIS_0_KI 1000
+#set AXIS_0_KD 0
+#set AXIS_0_MAXSPEED 300 #150
+#set AXIS_0_MINSPEED 10
+#set AXIS_0_ACCEL 6000
+#set AXIS_0_DECEL 6000
+#set AXIS_0_GPIO 0
+#set AXIS_0_GPIO_VALUE 1
+
+set GPIO_IN "7 8 9"
+set GPIO_OUT "0 1 2 3 4 5 17"
+set GPIO_STARTER 9
+set GPIO_STARTER_EDGE "rising"
+
+# 35 cm
+set OBSTACLE_THRESHOLD  340
+set OBSTACLE_THRESHOLD_COUNT 2
+
+# 0 = top
+# 1 = front left
+# 2 = front right
+set OBSTACLE_SENSORS_FRONT "0 1 2"
+
+# 10 = top
+# 11 = rear right
+# 12 = rear left
+set OBSTACLE_SENSORS_REAR  "10 11 12"
