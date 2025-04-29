@@ -1,0 +1,6 @@
+[submodule "ToF-L4/submodules/nuttx"]
+	path = ToF-L4/submodules/nuttx
+	url = https://github.com/apache/nuttx
+[submodule "ToF-L4/submodules/apps"]
+	path = ToF-L4/submodules/apps
+	url = https://github.com/apache/nuttx-apps
