@@ -1,0 +1,15 @@
+# build files in 'apps' and 'config'
+/apps/*/*.o
+/apps/*/.built
+/apps/*/.depend
+/apps/*/Make.dep
+
+/config/*/*.o
+/config/*/*.a
+/config/*/.built
+/config/*/.depend
+/config/*/Make.dep
+
+# generated romfs
+/romfs.h
+/romfs.img
