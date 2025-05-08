@@ -7,6 +7,8 @@
 #include "sender.h"
 
 int main(int argc, char *argv[]) {
+    processing_init();
+
     pthread_t processing_thread;
     pthread_t receiver_thread;
     pthread_t sender_thread;

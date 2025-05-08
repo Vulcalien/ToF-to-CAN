@@ -15,8 +15,8 @@ static void handle_message(struct can_msg_s *msg) {
 }
 
 void *receiver_run(void *arg) {
-    int can_fd = open("/dev/can0", O_RDONLY | O_NOCTTY);
-    if(can_fd < 0) {
+    int fd = open("/dev/can0", O_RDONLY | O_NOCTTY);
+    if(fd < 0) {
         perror("Receiver: /dev/can0 open");
         printf("Receiver: stopping");
         return NULL;
@@ -26,7 +26,7 @@ void *receiver_run(void *arg) {
 
     while(true) {
         struct can_msg_s msg;
-        // TODO read can_fd
+        // TODO read fd
 
         handle_message(&message);
     }
