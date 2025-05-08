@@ -30,4 +30,5 @@ void *receiver_run(void *arg) {
 
         handle_message(&message);
     }
+    return NULL;
 }
