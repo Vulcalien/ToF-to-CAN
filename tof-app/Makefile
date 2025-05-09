@@ -8,6 +8,6 @@ MODULE = "tof_app"
 CSRCS   = $(wildcard src/*.c)
 MAINSRC = src/main.c
 
-CFLAGS += -Iinclude
+CFLAGS += -Iinclude -I../include
 
 include $(APPDIR)/Application.mk

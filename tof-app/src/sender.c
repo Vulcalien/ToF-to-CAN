@@ -6,22 +6,35 @@
 #include <nuttx/can/can.h>
 
 #include "processing.h"
+#include "distance-sensor.h"
 
 static inline void write_distance(int fd, int distance, bool threshold_status) {
+    const int datalen = sizeof(struct distance_sensor_can_sample);
+    const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID; // TODO sensor ID
+
     struct can_msg_s msg;
 
     // set CAN header
     msg.cm_hdr = (struct can_hdr_s) {
-        .ch_id  = 0, // TODO
-        .ch_dlc = 0, // TODO msg size
+        .ch_id  = id,
+        .ch_dlc = datalen,
         .ch_rtr = false,
         .ch_tcf = false
     };
 
     // set CAN data
-    // TODO
+    struct distance_sensor_can_sample data = {
+        .distance        = distance,
+        .below_threshold = threshold_status
+    };
+    memcpy(msg.cm_data, &data, datalen);
 
-    // TODO write to fd
+    // write CAN message
+    int msglen = CAN_MSGLEN(datalen);
+    int nbytes = write(fd, &msg, msglen);
+    if(nbytes != msglen) {
+        // TODO handle error
+    }
 }
 
 void *sender_run(void *arg) {
