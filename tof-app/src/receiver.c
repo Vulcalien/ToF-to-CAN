@@ -28,7 +28,7 @@ void *receiver_run(void *arg) {
         struct can_msg_s msg;
         // TODO read fd
 
-        handle_message(&message);
+        handle_message(&msg);
     }
     return NULL;
 }
