@@ -10,6 +10,12 @@
 /config/*/.depend
 /config/*/Make.dep
 
+# build files in 'tof-app'
+/tof-app/**/*.o
+/tof-app/**/.built
+/tof-app/**/.depend
+/tof-app/**/Make.dep
+
 # generated romfs
 /romfs.h
 /romfs.img
