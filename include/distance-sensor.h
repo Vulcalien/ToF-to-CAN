@@ -22,6 +22,9 @@ struct distance_sensor_can_sample {
     bool below_threshold;
 };
 
+// number of distinct sensor IDs (ID=0 is broadcast)
+#define DISTANCE_SENSOR_MAX_COUNT 32
+
 #define DISTANCE_SENSOR_CAN_CONFIG_MASK_ID 0x6c0 // 0x6c0...0x6df
 #define DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID 0x6e0 // 0x6e0...0x6ff
 
