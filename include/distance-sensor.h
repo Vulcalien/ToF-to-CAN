@@ -3,7 +3,7 @@
 
 struct distance_sensor_can_config {
     // ToF settings
-    unsigned int resolution_sqrt   : 8; // 4 or 8
+    unsigned int resolution        : 8; // 16 or 64
     unsigned int ranging_frequency : 8; // 1...60Hz
     unsigned int ranging_mode      : 1; // 0=autonomous, 1=continuous
     unsigned int sharpener         : 7; // 0...99%

@@ -18,12 +18,6 @@ void processing_init(void) {
     sem_init(&processing_sample_available, 0, 0); // available = 0
 }
 
-void processing_config(int _mode, int _threshold, int _threshold_delay) {
-    processing_mode = _mode;
-    threshold       = _threshold;
-    threshold_delay = _threshold_delay;
-}
-
 static inline void update_distance(void) {
     // TODO
 }
@@ -56,4 +50,31 @@ void *processing_run(void *arg) {
         sem_post(&processing_sample_available);
     }
     return NULL;
+}
+
+int processing_set_mode(int mode) {
+    int err = 0; // TODO handle invalid modes?
+
+    processing_mode = mode;
+    printf(
+        "Processing: setting mode to %d (err=%d)\n",
+        mode, err
+    );
+    return 0;
+}
+
+int processing_set_threshold(int _threshold, int _delay) {
+    int err = 0;
+
+    if(_threshold >= 0) threshold = _threshold;
+    else err = 1;
+
+    if(_delay >= 0) threshold_delay = _delay;
+    else err = 1;
+
+    printf(
+        "Processing: setting threshold to %d with delay %d (err=%d)\n",
+        _threshold, _delay, err
+    );
+    return err;
 }

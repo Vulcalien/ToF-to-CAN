@@ -5,6 +5,8 @@
 #include <nuttx/can/can.h>
 
 #include "distance-sensor.h"
+#include "processing.h"
+#include "tof.h"
 
 static void handle_message(struct can_msg_s *msg) {
     // TODO ignore confirmation messages???
@@ -23,7 +25,17 @@ static void handle_message(struct can_msg_s *msg) {
             struct distance_sensor_can_config *config =
                 (struct distance_sensor_can_config *) &msg->cm_data;
 
-            // TODO apply config
+            // set ToF settings
+            tof_set_resolution(config->resolution);
+            tof_set_ranging_frequency(config->ranging_frequency);
+            tof_set_ranging_mode(config->ranging_mode);
+            tof_set_sharpener(config->sharpener);
+
+            // set processing settings
+            processing_set_mode(config->processing_mode);
+            processing_set_threshold(
+                config->threshold, config->threshold_delay
+            );
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
