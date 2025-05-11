@@ -39,7 +39,7 @@ void *receiver_run(void *arg) {
     int fd = open("/dev/can0", O_RDONLY | O_NOCTTY);
     if(fd < 0) {
         perror("Receiver: /dev/can0 open");
-        printf("Receiver: stopping");
+        printf("Receiver: stopping\n");
         return NULL;
     }
 

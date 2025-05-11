@@ -41,7 +41,7 @@ void *sender_run(void *arg) {
     int fd = open("/dev/can0", O_WRONLY | O_NOCTTY);
     if(fd < 0) {
         perror("Sender: /dev/can0 open");
-        printf("Sender: stopping");
+        printf("Sender: stopping\n");
         return NULL;
     }
 

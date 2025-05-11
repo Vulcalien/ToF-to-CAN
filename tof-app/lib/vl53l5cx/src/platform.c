@@ -27,14 +27,14 @@ uint8_t VL53L5CX_RdByte(
 {
     struct i2c_config_s config;
     config.frequency = I2C_FREQUENCY;
-    config.address   = p_platform->address;
+    config.address   = (p_platform->address >> 1);
     config.addrlen   = 7;
 
     uint8_t buf[2];
     buf[0] = (RegisterAdress >> 8) & 0xff;
     buf[1] = (RegisterAdress)      & 0xff;
 
-    return i2c_writeread(i2cmain, &config, &buf, 2, &p_value, 1);
+    return i2c_writeread(i2cmain, &config, buf, 2, p_value, 1);
 }
 
 uint8_t VL53L5CX_WrByte(
@@ -44,7 +44,7 @@ uint8_t VL53L5CX_WrByte(
 {
     struct i2c_config_s config;
     config.frequency = I2C_FREQUENCY;
-    config.address   = p_platform->address;
+    config.address   = (p_platform->address >> 1);
     config.addrlen   = 7;
 
     uint8_t buf[3];
