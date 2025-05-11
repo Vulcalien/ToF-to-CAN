@@ -15,4 +15,5 @@ extern void processing_init(void);
 extern void *processing_run(void *arg);
 
 extern int processing_set_mode(int mode);
-extern int processing_set_threshold(int threshold, int delay);
+extern int processing_set_threshold(int threshold);
+extern int processing_set_threshold_delay(int delay);

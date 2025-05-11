@@ -33,9 +33,8 @@ static void handle_message(struct can_msg_s *msg) {
 
             // set processing settings
             processing_set_mode(config->processing_mode);
-            processing_set_threshold(
-                config->threshold, config->threshold_delay
-            );
+            processing_set_threshold(config->threshold);
+            processing_set_threshold_delay(config->threshold_delay);
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
