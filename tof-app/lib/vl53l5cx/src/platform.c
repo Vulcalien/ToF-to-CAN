@@ -16,7 +16,10 @@
 
 #include <nuttx/i2c/i2c_master.h>
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 #define I2C_FREQUENCY 400000 // 400 KHz
+#define I2C_MAX_PACKET_SIZE 32
 
 extern struct i2c_master_s *i2cmain;
 
@@ -61,12 +64,27 @@ uint8_t VL53L5CX_WrMulti(
         uint8_t *p_values,
         uint32_t size)
 {
-    // TODO
-    uint8_t status = 255;
+    int err = 0;
 
-        /* Need to be implemented by customer. This function returns 0 if OK */
+    struct i2c_config_s config;
+    config.frequency = I2C_FREQUENCY;
+    config.address   = (p_platform->address >> 1);
+    config.addrlen   = 7;
 
-    return status;
+    uint8_t buf[I2C_MAX_PACKET_SIZE];
+    buf[0] = (RegisterAdress >> 8) & 0xff;
+    buf[1] = (RegisterAdress)      & 0xff;
+
+    // write in blocks of I2C_MAX_PACKET_SIZE bytes or less
+    while(size > 0 && !err) {
+        const int data_bytes = MIN(size, I2C_MAX_PACKET_SIZE - 2);
+        memcpy(buf + 2, p_values, data_bytes);
+        err = i2c_write(i2cmain, &config, buf, data_bytes + 2);
+
+        size -= data_bytes;
+        p_values += data_bytes;
+    }
+    return err;
 }
 
 uint8_t VL53L5CX_RdMulti(
@@ -75,12 +93,26 @@ uint8_t VL53L5CX_RdMulti(
         uint8_t *p_values,
         uint32_t size)
 {
-    // TODO
-    uint8_t status = 255;
+    int err = 0;
 
-    /* Need to be implemented by customer. This function returns 0 if OK */
+    struct i2c_config_s config;
+    config.frequency = I2C_FREQUENCY;
+    config.address   = (p_platform->address >> 1);
+    config.addrlen   = 7;
 
-    return status;
+    uint8_t buf[2];
+    buf[0] = (RegisterAdress >> 8) & 0xff;
+    buf[1] = (RegisterAdress)      & 0xff;
+
+    // read in blocks of I2C_MAX_PACKET_SIZE bytes or less
+    while(size > 0 && !err) {
+        const int data_bytes = MIN(size, I2C_MAX_PACKET_SIZE - 2);
+        err = i2c_writeread(i2cmain, &config, buf, 2, p_values, data_bytes);
+
+        size -= data_bytes;
+        p_values += data_bytes;
+    }
+    return err;
 }
 
 uint8_t VL53L5CX_Reset_Sensor(
