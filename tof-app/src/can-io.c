@@ -3,8 +3,9 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <nuttx/can/can.h>
+
+#include "binarysem.h"
 
 #include "distance-sensor.h"
 #include "transmission.h"
@@ -53,10 +54,8 @@ static void handle_message(struct can_msg_s *msg) {
             // if so, that the transmission timing is 'on-demand'
             if(msg->cm_hdr.ch_rtr) {
                 if(transmission_timing == TRANSMISSION_TIMING_ON_DEMAND) {
-                    // TODO check if there are pending sample requests?
-
                     // request a new sample
-                    sem_post(&processing_request_sample);
+                    binarysem_post(&processing_request_sample);
                 }
             }
         } break;
@@ -109,7 +108,7 @@ static inline void write_distance(int distance, bool threshold_status) {
 static void *sender_run(void *arg) {
     while(true) {
         // wait for a sample to become available
-        sem_wait(&processing_sample_available);
+        binarysem_wait(&processing_sample_available);
 
         // read distance and threshold status variables
         const int  distance         = processing_distance;
@@ -119,7 +118,7 @@ static void *sender_run(void *arg) {
         write_distance(distance, threshold_status);
 
         if(transmission_timing == TRANSMISSION_TIMING_CONTINUOUS)
-            sem_post(&processing_request_sample);
+            binarysem_post(&processing_request_sample);
     }
     return NULL;
 }

@@ -2,13 +2,13 @@
 
 #include "main.h"
 
-#include <semaphore.h>
+#include "binarysem.h"
 
 extern int  processing_distance;
 extern bool processing_threshold_status;
 
-extern sem_t processing_request_sample;
-extern sem_t processing_sample_available;
+extern binarysem processing_request_sample;
+extern binarysem processing_sample_available;
 
 extern void processing_init(void);
 
