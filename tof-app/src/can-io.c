@@ -64,8 +64,6 @@ static void handle_message(struct can_msg_s *msg) {
 }
 
 static void *receiver_run(void *arg) {
-    // TODO bit timing
-
     while(true) {
         struct can_msg_s msg;
         // TODO read can_fd
@@ -109,8 +107,6 @@ static inline void write_distance(int distance, bool threshold_status) {
 }
 
 static void *sender_run(void *arg) {
-    // TODO bit timing
-
     while(true) {
         // wait for a sample to become available
         sem_wait(&processing_sample_available);
@@ -130,12 +126,34 @@ static void *sender_run(void *arg) {
 
 /* ================================================================== */
 
+static inline void print_bit_timing(int fd) {
+    struct canioc_bittiming_s bt;
+    int ret = ioctl(
+        fd, CANIOC_GET_BITTIMING,
+        (unsigned long) ((uintptr_t) &bt)
+    );
+
+    if(ret < 0) {
+        printf("CAN IO: bit timing not available\n");
+    } else {
+        printf("CAN IO: bit timing:\n");
+        printf("   Baud: %lu\n", (unsigned long) bt.bt_baud);
+        printf("  TSEG1: %u\n", bt.bt_tseg1);
+        printf("  TSEG2: %u\n", bt.bt_tseg2);
+        printf("    SJW: %u\n", bt.bt_sjw);
+    }
+}
+
 int can_io_start(void) {
+    // open CAN device in read-write mode
     can_fd = open("/dev/can0", O_RDWR | O_NOCTTY);
     if(can_fd < 0) {
         perror("CAN IO"); // TODO add more details to the error?
         return 1;
     }
+
+    // print bit timing information
+    print_bit_timing(can_fd);
 
     pthread_t receiver_thread;
     pthread_t sender_thread;
