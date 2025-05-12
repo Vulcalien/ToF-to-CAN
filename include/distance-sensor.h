@@ -14,6 +14,7 @@ struct distance_sensor_can_config {
     unsigned int threshold_delay : 8;  // 0...255
 
     // data transmission
+    unsigned int transmission_timing : 1; // 0=on-demand, 1=continuous
     // TODO
 };
 

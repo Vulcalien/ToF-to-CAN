@@ -2,9 +2,11 @@
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include <nuttx/can/can.h>
 
 #include "distance-sensor.h"
+#include "transmission.h"
 #include "processing.h"
 #include "tof.h"
 
@@ -35,12 +37,21 @@ static void handle_message(struct can_msg_s *msg) {
             processing_set_mode(config->processing_mode);
             processing_set_threshold(config->threshold);
             processing_set_threshold_delay(config->threshold_delay);
+
+            // set transmission settings
+            transmission_set_timing(config->transmission_timing);
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
-            // check if message has 'Remote Transmit Request' bit set
+            // check if message is a 'Remote Transmit Request' and,
+            // if so, that the transmission timing is 'on-demand'
             if(msg->cm_hdr.ch_rtr) {
-                // TODO if transmit mode is on-demand, request sample
+                if(transmission_timing == TRANSMISSION_TIMING_ON_DEMAND) {
+                    // TODO check if there are pending sample requests?
+
+                    // request a new sample
+                    sem_post(&processing_request_sample);
+                }
             }
         } break;
     }

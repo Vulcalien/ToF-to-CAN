@@ -5,8 +5,9 @@
 #include <semaphore.h>
 #include <nuttx/can/can.h>
 
-#include "processing.h"
 #include "distance-sensor.h"
+#include "transmission.h"
+#include "processing.h"
 
 static inline void write_distance(int fd, int distance, bool threshold_status) {
     const int datalen = sizeof(struct distance_sensor_can_sample);
@@ -58,7 +59,8 @@ void *sender_run(void *arg) {
         // send CAN message
         write_distance(fd, distance, threshold_status);
 
-        // TODO request new sample?
+        if(transmission_timing == TRANSMISSION_TIMING_CONTINUOUS)
+            sem_post(&processing_request_sample);
     }
     return NULL;
 }
