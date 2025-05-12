@@ -5,6 +5,9 @@
 
 #include "vl53l5cx_api.h"
 
+int tof_resolution   = 16; // default value
+int tof_matrix_width = 4;  // default value
+
 static VL53L5CX_Configuration config;
 static bool ranging = false;
 
@@ -40,6 +43,12 @@ int tof_stop_ranging(void) {
 }
 
 int tof_set_resolution(int resolution) {
+    tof_resolution = resolution;
+    if(resolution == VL53L5CX_RESOLUTION_4X4)
+        tof_matrix_width = 4;
+    else if(resolution == VL53L5CX_RESOLUTION_8X8)
+        tof_matrix_width = 8;
+
     int err = vl53l5cx_set_resolution(&config, resolution);
     printf(
         "ToF: setting resolution to %d (err=%d)\n",
@@ -48,7 +57,7 @@ int tof_set_resolution(int resolution) {
     return err;
 }
 
-int tof_read_data(int16_t *matrix) {
+int tof_read_data(int16_t *matrix, uint8_t *status_matrix) {
     int err = 0;
     VL53L5CX_ResultsData results;
 
@@ -63,14 +72,20 @@ int tof_read_data(int16_t *matrix) {
         usleep(1000); // wait 1ms
     }
 
+    // read ranging data
     err = vl53l5cx_get_ranging_data(&config, &results);
     if(err) {
         printf("ToF: error in vl53l5cx_get_ranging_data\n");
         return err;
     }
 
-    // TODO copy data
+    // copy ranging data
+    for(int i = 0; i < tof_resolution; i++) {
+        const int results_index = i * VL53L5CX_NB_TARGET_PER_ZONE;
 
+        matrix[i] = results.distance_mm[results_index];
+        status_matrix[i] = results.target_status[results_index];
+    }
     return err;
 }
 
