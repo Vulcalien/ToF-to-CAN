@@ -10,8 +10,12 @@ MAINSRC = src/main.c
 
 CFLAGS += -Iinclude -I../include
 
-# add vl53l5cx library
+# vl53l5cx library
 CSRCS  += $(wildcard lib/vl53l5cx/src/*.c)
 CFLAGS += -Ilib/vl53l5cx/inc
+
+# binarysem library
+CSRCS  += $(wildcard lib/binarysem/*.c)
+CFLAGS += -Ilib/binarysem
 
 include $(APPDIR)/Application.mk
