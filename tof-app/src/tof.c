@@ -25,6 +25,14 @@ int tof_init(void) {
     return 0;
 }
 
+int tof_start_ranging(void) {
+    return vl53l5cx_start_ranging(&config);
+}
+
+int tof_stop_ranging(void) {
+    return vl53l5cx_stop_ranging(&config);
+}
+
 int tof_set_resolution(int resolution) {
     int err = vl53l5cx_set_resolution(&config, resolution);
     printf(
