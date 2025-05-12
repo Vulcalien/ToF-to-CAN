@@ -2,7 +2,6 @@
 
 #include "main.h"
 
-// returns 0 on success, nonzero otherwise
 extern int tof_init(void);
 
 extern int tof_set_resolution(int resolution);
