@@ -5,6 +5,7 @@
 #include "vl53l5cx_api.h"
 
 static VL53L5CX_Configuration config;
+static bool ranging = false;
 
 int tof_init(void) {
     config.platform.address = VL53L5CX_DEFAULT_I2C_ADDRESS;
@@ -26,10 +27,14 @@ int tof_init(void) {
 }
 
 int tof_start_ranging(void) {
+    if(ranging)
+        return 0;
     return vl53l5cx_start_ranging(&config);
 }
 
 int tof_stop_ranging(void) {
+    if(!ranging)
+        return 0;
     return vl53l5cx_stop_ranging(&config);
 }
 
