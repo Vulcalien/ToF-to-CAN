@@ -1,0 +1,148 @@
+#include "can-io.h"
+
+#include <stdio.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <nuttx/can/can.h>
+
+#include "distance-sensor.h"
+#include "transmission.h"
+#include "processing.h"
+
+static int can_fd;
+
+/* ================================================================== */
+/*                              Receiver                              */
+/* ================================================================== */
+
+static void handle_message(struct can_msg_s *msg) {
+    // TODO ignore confirmation messages???
+    /*if(msg->cm_hdr.tcf)*/
+        /*return;*/
+
+    const int msg_sensor_id = msg->cm_hdr.ch_id % DISTANCE_SENSOR_MAX_COUNT;
+    const int msg_type      = msg->cm_hdr.ch_id - msg_sensor_id;
+
+    // check if message is addressed to this device (ID=0 is broadcast)
+    if(msg_sensor_id != 0 && msg_sensor_id != /*TODO*/0)
+        return;
+
+    switch(msg_type) {
+        case DISTANCE_SENSOR_CAN_CONFIG_MASK_ID: {
+            struct distance_sensor_can_config *config =
+                (struct distance_sensor_can_config *) &msg->cm_data;
+
+            // set ToF settings
+            tof_set_resolution(config->resolution);
+            tof_set_ranging_frequency(config->ranging_frequency);
+            tof_set_ranging_mode(config->ranging_mode);
+            tof_set_sharpener(config->sharpener);
+
+            // set processing settings
+            processing_set_mode(config->processing_mode);
+            processing_set_threshold(config->threshold);
+            processing_set_threshold_delay(config->threshold_delay);
+
+            // set transmission settings
+            transmission_set_timing(config->transmission_timing);
+        } break;
+
+        case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
+            // check if message is a 'Remote Transmit Request' and,
+            // if so, that the transmission timing is 'on-demand'
+            if(msg->cm_hdr.ch_rtr) {
+                if(transmission_timing == TRANSMISSION_TIMING_ON_DEMAND) {
+                    // TODO check if there are pending sample requests?
+
+                    // request a new sample
+                    sem_post(&processing_request_sample);
+                }
+            }
+        } break;
+    }
+}
+
+static void *receiver_run(void *arg) {
+    // TODO bit timing
+
+    while(true) {
+        struct can_msg_s msg;
+        // TODO read can_fd
+
+        handle_message(&msg);
+    }
+    return NULL;
+}
+
+/* ================================================================== */
+/*                               Sender                               */
+/* ================================================================== */
+
+static inline void write_distance(int distance, bool threshold_status) {
+    const int datalen = sizeof(struct distance_sensor_can_sample);
+    const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID; // TODO sensor ID
+
+    struct can_msg_s msg;
+
+    // set CAN header
+    msg.cm_hdr = (struct can_hdr_s) {
+        .ch_id  = id,
+        .ch_dlc = datalen,
+        .ch_rtr = false,
+        .ch_tcf = false
+    };
+
+    // set CAN data
+    struct distance_sensor_can_sample data = {
+        .distance        = distance,
+        .below_threshold = threshold_status
+    };
+    memcpy(msg.cm_data, &data, datalen);
+
+    // write CAN message
+    int msglen = CAN_MSGLEN(datalen);
+    int nbytes = write(can_fd, &msg, msglen);
+    if(nbytes != msglen) {
+        // TODO handle error
+    }
+}
+
+static void *sender_run(void *arg) {
+    // TODO bit timing
+
+    while(true) {
+        // wait for a sample to become available
+        sem_wait(&processing_sample_available);
+
+        // read distance and threshold status variables
+        const int  distance         = processing_distance;
+        const bool threshold_status = processing_threshold_status;
+
+        // send CAN message
+        write_distance(distance, threshold_status);
+
+        if(transmission_timing == TRANSMISSION_TIMING_CONTINUOUS)
+            sem_post(&processing_request_sample);
+    }
+    return NULL;
+}
+
+/* ================================================================== */
+
+int can_io_start(void) {
+    can_fd = open("/dev/can0", O_RDWR | O_NOCTTY);
+    if(can_fd < 0) {
+        perror("CAN IO"); // TODO add more details to the error?
+        return 1;
+    }
+
+    pthread_t receiver_thread;
+    pthread_t sender_thread;
+
+    // TODO handle errors
+    pthread_create(&receiver_thread, NULL, receiver_run, NULL);
+    pthread_create(&sender_thread,   NULL, sender_run,   NULL);
+
+    return 0;
+}
