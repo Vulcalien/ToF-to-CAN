@@ -1,6 +1,7 @@
 #include "tof.h"
 
 #include <stdio.h>
+#include <unistd.h>
 
 #include "vl53l5cx_api.h"
 
@@ -44,6 +45,32 @@ int tof_set_resolution(int resolution) {
         "ToF: setting resolution to %d (err=%d)\n",
         resolution, err
     );
+    return err;
+}
+
+int tof_read_data(int16_t *matrix) {
+    int err = 0;
+    VL53L5CX_ResultsData results;
+
+    // wait for data to be ready
+    uint8_t is_ready = false;
+    while(!is_ready) {
+        err = vl53l5cx_check_data_ready(&config, &is_ready);
+        if(err) {
+            printf("ToF: error in vl53l5cx_check_data_ready\n");
+            return err;
+        }
+        usleep(1000); // wait 1ms
+    }
+
+    err = vl53l5cx_get_ranging_data(&config, &results);
+    if(err) {
+        printf("ToF: error in vl53l5cx_get_ranging_data\n");
+        return err;
+    }
+
+    // TODO copy data
+
     return err;
 }
 

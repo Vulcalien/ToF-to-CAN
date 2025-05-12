@@ -4,6 +4,8 @@
 
 #include "binarysem.h"
 
+#include "tof.h"
+
 int  processing_distance;
 bool processing_threshold_status;
 
@@ -20,6 +22,9 @@ void processing_init(void) {
 }
 
 static inline void update_distance(void) {
+    int16_t matrix[64];
+
+    tof_read_data(matrix);
     // TODO
 }
 
