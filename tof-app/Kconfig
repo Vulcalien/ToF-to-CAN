@@ -1,0 +1,5 @@
+config TOF_APP
+    tristate "tof_app"
+    default y
+    ---help---
+        ToF application
