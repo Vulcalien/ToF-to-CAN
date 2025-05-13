@@ -12,22 +12,45 @@ static VL53L5CX_Configuration config;
 static VL53L5CX_ResultsData results;
 static bool ranging = false;
 
+extern void set_i2c_rst(bool on);
+extern void set_LPn(bool on);
+extern void board_userled(int led, bool ledon);
+
+static inline void tof_reset(void) {
+    set_LPn(0);
+    usleep(2000);
+    set_LPn(1);
+
+    set_i2c_rst(0);
+    usleep(2000);
+    set_i2c_rst(1);
+    usleep(2000);
+    set_i2c_rst(0);
+    usleep(10000);
+}
+
 int tof_init(void) {
+    printf("ToF: initializing\n");
     config.platform.address = VL53L5CX_DEFAULT_I2C_ADDRESS;
+
+    tof_reset();
 
     uint8_t is_alive;
     if(vl53l5cx_is_alive(&config, &is_alive) || !is_alive) {
         printf(
-            "ToF: sensor not detected at address %x\n",
+            "ToF: sensor not detected at address 0x%x\n",
             config.platform.address
         );
         return 1;
     }
+    printf("ToF: sensor detected\n");
 
     if(vl53l5cx_init(&config)) {
         printf("ToF: error initializing sensor\n");
         return 1;
     }
+    printf("ToF: initialization complete\n");
+
     return 0;
 }
 

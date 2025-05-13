@@ -19,6 +19,8 @@ static int threshold_delay;
 void processing_init(void) {
     binarysem_init(&processing_request_sample,   1); // request   = 1
     binarysem_init(&processing_sample_available, 0); // available = 0
+
+    tof_init();
 }
 
 static inline void update_distance(void) {
