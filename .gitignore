@@ -19,3 +19,4 @@
 # generated romfs
 /romfs.h
 /romfs.img
+/config/include/romfs.h
