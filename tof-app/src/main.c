@@ -1,5 +1,6 @@
 #include "main.h"
 
+#include <stdio.h>
 #include <pthread.h>
 
 #include "processing.h"

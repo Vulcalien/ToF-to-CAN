@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <sys/ioctl.h>
 #include <nuttx/can/can.h>
 
 #include "binarysem.h"
@@ -10,6 +11,7 @@
 #include "distance-sensor.h"
 #include "processing.h"
 #include "transmit.h"
+#include "tof.h"
 
 static int can_fd;
 
