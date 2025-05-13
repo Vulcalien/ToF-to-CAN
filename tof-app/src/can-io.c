@@ -8,8 +8,8 @@
 #include "binarysem.h"
 
 #include "distance-sensor.h"
-#include "transmission.h"
 #include "processing.h"
+#include "transmit.h"
 
 static int can_fd;
 
@@ -46,14 +46,14 @@ static void handle_message(struct can_msg_s *msg) {
             processing_set_threshold_delay(config->threshold_delay);
 
             // set transmission settings
-            transmission_set_timing(config->transmission_timing);
+            transmit_set_timing(config->transmit_timing);
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
             // check if message is a 'Remote Transmit Request' and,
-            // if so, that the transmission timing is 'on-demand'
+            // if so, that the transmit timing is 'on-demand'
             if(msg->cm_hdr.ch_rtr) {
-                if(transmission_timing == TRANSMISSION_TIMING_ON_DEMAND) {
+                if(transmit_timing == TRANSMIT_ON_DEMAND) {
                     // request a new sample
                     binarysem_post(&processing_request_sample);
                 }
@@ -117,7 +117,7 @@ static void *sender_run(void *arg) {
         // send CAN message
         write_distance(distance, threshold_status);
 
-        if(transmission_timing == TRANSMISSION_TIMING_CONTINUOUS)
+        if(transmit_timing == TRANSMIT_CONTINUOUS)
             binarysem_post(&processing_request_sample);
     }
     return NULL;
