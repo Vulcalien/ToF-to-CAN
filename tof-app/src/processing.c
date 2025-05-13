@@ -66,7 +66,7 @@ int processing_set_mode(int mode) {
 
     processing_mode = mode;
     printf(
-        "Processing: setting mode to %d (err=%d)\n",
+        "[Processing] setting mode to %d (err=%d)\n",
         mode, err
     );
     return 0;
@@ -79,7 +79,7 @@ int processing_set_threshold(int _threshold) {
     else err = 1;
 
     printf(
-        "Processing: setting threshold to %d (err=%d)\n",
+        "[Processing] setting threshold to %d (err=%d)\n",
         _threshold, err
     );
     return err;
@@ -92,7 +92,7 @@ int processing_set_threshold_delay(int delay) {
     else err = 1;
 
     printf(
-        "Processing: setting threshold delay to %d (err=%d)\n",
+        "[Processing] setting threshold delay to %d (err=%d)\n",
         delay, err
     );
     return err;

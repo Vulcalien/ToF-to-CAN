@@ -12,7 +12,7 @@ int transmit_set_timing(int timing) {
     else err = 1;
 
     printf(
-        "Transmit: setting transmit timing to %d (err=%d)\n",
+        "[Transmit] setting transmit timing to %d (err=%d)\n",
         timing, err
     );
     return err;

@@ -30,26 +30,27 @@ static inline void tof_reset(void) {
 }
 
 int tof_init(void) {
-    printf("ToF: initializing\n");
+    printf("[ToF] initializing\n");
     config.platform.address = VL53L5CX_DEFAULT_I2C_ADDRESS;
 
+    printf("[ToF] resetting sensor\n");
     tof_reset();
 
     uint8_t is_alive;
     if(vl53l5cx_is_alive(&config, &is_alive) || !is_alive) {
         printf(
-            "ToF: sensor not detected at address 0x%x\n",
+            "[ToF] sensor not detected at address 0x%x\n",
             config.platform.address
         );
         return 1;
     }
-    printf("ToF: sensor detected\n");
+    printf("[ToF] sensor detected\n");
 
     if(vl53l5cx_init(&config)) {
-        printf("ToF: error initializing sensor\n");
+        printf("[ToF] error initializing sensor\n");
         return 1;
     }
-    printf("ToF: initialization complete\n");
+    printf("[ToF] initialization complete\n");
 
     return 0;
 }
@@ -75,7 +76,7 @@ int tof_set_resolution(int resolution) {
 
     int err = vl53l5cx_set_resolution(&config, resolution);
     printf(
-        "ToF: setting resolution to %d (err=%d)\n",
+        "[ToF] setting resolution to %d (err=%d)\n",
         resolution, err
     );
     return err;
@@ -89,7 +90,7 @@ int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
     while(!is_ready) {
         err = vl53l5cx_check_data_ready(&config, &is_ready);
         if(err) {
-            printf("ToF: error in vl53l5cx_check_data_ready\n");
+            printf("[ToF] error in vl53l5cx_check_data_ready\n");
             return err;
         }
         usleep(1000); // wait 1ms
@@ -98,7 +99,7 @@ int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
     // read ranging data
     err = vl53l5cx_get_ranging_data(&config, &results);
     if(err) {
-        printf("ToF: error in vl53l5cx_get_ranging_data\n");
+        printf("[ToF] error in vl53l5cx_get_ranging_data\n");
         return err;
     }
 
@@ -126,7 +127,7 @@ int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
 int tof_set_ranging_frequency(int frequency_hz) {
     int err = vl53l5cx_set_ranging_frequency_hz(&config, frequency_hz);
     printf(
-        "ToF: setting ranging frequency to %dHz (err=%d)\n",
+        "[ToF] setting ranging frequency to %dHz (err=%d)\n",
         frequency_hz, err
     );
     return err;
@@ -144,7 +145,7 @@ int tof_set_ranging_mode(int mode) {
         setting_name = "Unknown";
 
     printf(
-        "ToF: setting ranging mode to '%s' (err=%d)\n",
+        "[ToF] setting ranging mode to '%s' (err=%d)\n",
         setting_name, err
     );
     return err;
@@ -153,7 +154,7 @@ int tof_set_ranging_mode(int mode) {
 int tof_set_sharpener(int sharpener_percent) {
     int err = vl53l5cx_set_sharpener_percent(&config, sharpener_percent);
     printf(
-        "ToF: setting sharpener to %d%% (err=%d)\n",
+        "[ToF] setting sharpener to %d%% (err=%d)\n",
         sharpener_percent, err
     );
     return err;
