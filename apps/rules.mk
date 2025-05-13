@@ -1,7 +1,0 @@
-
-CXXEXT = .cpp
-CXXSRCS += $(SOURCEFILES)
-
-CFLAGS += -I$(TOPDIR)
-CXXFLAGS += -I$(TOPDIR) -std=c++14
-
