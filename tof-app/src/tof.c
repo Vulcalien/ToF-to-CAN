@@ -9,6 +9,7 @@ int tof_resolution   = 16; // default value
 int tof_matrix_width = 4;  // default value
 
 static VL53L5CX_Configuration config;
+static VL53L5CX_ResultsData results;
 static bool ranging = false;
 
 int tof_init(void) {
@@ -57,9 +58,8 @@ int tof_set_resolution(int resolution) {
     return err;
 }
 
-int tof_read_data(int16_t *matrix, uint8_t *status_matrix) {
+int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
     int err = 0;
-    VL53L5CX_ResultsData results;
 
     // wait for data to be ready
     uint8_t is_ready = false;
@@ -79,13 +79,24 @@ int tof_read_data(int16_t *matrix, uint8_t *status_matrix) {
         return err;
     }
 
-    // copy ranging data
-    for(int i = 0; i < tof_resolution; i++) {
-        const int results_index = i * VL53L5CX_NB_TARGET_PER_ZONE;
+    #if VL53L5CX_NB_TARGET_PER_ZONE == 1
+        *matrix = results.distance_mm;
+        *status_matrix = results.target_status;
+    #else
+        static int16_t _matrix[64];
+        static uint8_t _status_matrix[64];
 
-        matrix[i] = results.distance_mm[results_index];
-        status_matrix[i] = results.target_status[results_index];
-    }
+        for(int i = 0; i < tof_resolution; i++) {
+            const int results_index = i * VL53L5CX_NB_TARGET_PER_ZONE;
+
+            _matrix[i] = results.distance_mm[results_index];
+            _status_matrix[i] = results.target_status[results_index];
+        }
+
+        *matrix = _matrix;
+        *status_matrix = _status_matrix;
+    #endif
+
     return err;
 }
 

@@ -10,7 +10,7 @@ extern int tof_init(void);
 extern int tof_start_ranging(void);
 extern int tof_stop_ranging(void);
 
-extern int tof_read_data(int16_t *matrix, uint8_t *status_matrix);
+extern int tof_read_data(int16_t **matrix, uint8_t **status_matrix);
 
 extern int tof_set_resolution(int resolution);
 extern int tof_set_ranging_frequency(int frequency_hz);

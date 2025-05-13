@@ -22,10 +22,10 @@ void processing_init(void) {
 }
 
 static inline void update_distance(void) {
-    int16_t matrix[tof_resolution];
-    uint8_t status_matrix[tof_resolution];
+    int16_t *matrix;
+    uint8_t *status_matrix;
 
-    tof_read_data(matrix, status_matrix);
+    tof_read_data(&matrix, &status_matrix);
     // TODO
 }
 
