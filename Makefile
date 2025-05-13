@@ -1,26 +1,18 @@
 .PHONY: all clean distclean program reset qconfig
 EXTRA_CLEAN_FILES = romfs.h romfs.img
 
-# Robot selection
-ifndef ID
-$(error PLEASE USE "make ID=num")
-endif
-
-all: submodules/nuttx/.config submodules/apps/apps romfs.h
+all: submodules/nuttx/.config submodules/apps/tof-app romfs.h
 	cd submodules/nuttx && $(MAKE) all && arm-none-eabi-size nuttx
 
-set:
-	touch etc/init.d/rcS && $(MAKE) all
-
-clean: submodules/apps/apps
+clean: submodules/apps/tof-app
 	rm -f $(EXTRA_CLEAN_FILES)
 	cd submodules/nuttx && $(MAKE) clean
 
-distclean: submodules/apps/apps
+distclean: submodules/apps/tof-app
 	rm -f $(EXTRA_CLEAN_FILES)
 	cd submodules/nuttx && $(MAKE) distclean
 	cd config/tof-l431-nsh && cp -f defconfig.src defconfig
-	-rm submodules/apps/apps #apps/Kconfig
+	-rm submodules/apps/tof-app
 
 program: all
 	openocd \
@@ -45,16 +37,14 @@ qconfig: submodules/nuttx/.config
 	cd submodules/nuttx && $(MAKE) qconfig
 	cp -v submodules/nuttx/.config config/tof-l431-nsh/defconfig
 
-submodules/apps/apps:
-	ln -sTf ../../apps submodules/apps/apps
+submodules/apps/tof-app:
+	ln -sTf ../../tof-app submodules/apps/tof-app
 
-submodules/nuttx/.config: submodules/apps/apps
+submodules/nuttx/.config: submodules/apps/tof-app
 	cd submodules/nuttx/tools && ./configure.sh ../../config/tof-l431-nsh
 
 romfs.img: $(shell find etc)
-	awk '{gsub(/!!ID!!/, "$(ID)"); print }' rcS.template > etc/init.d/rcS
 	genromfs -f romfs.img -d etc -V 'ROMFS /etc'
-#echo "set TOF_ID $(ID)" > etc/init.d/rc.tof
 
 romfs.h: romfs.img
 	xxd -i romfs.img romfs.h && cp romfs.h config/include
