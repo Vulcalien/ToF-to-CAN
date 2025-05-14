@@ -60,7 +60,8 @@ static int process_area(int16_t *matrix, uint8_t *status,
     return -1;
 }
 
-static inline void update_distance(void) {
+// return 0 if distance is valid
+static inline int update_distance(void) {
     int16_t *matrix;
     uint8_t *status_matrix;
 
@@ -100,6 +101,7 @@ static inline void update_distance(void) {
         x0, y0, x1, y1, // bounds of the area
         result_selector
     );
+    return (processing_distance < 0);
 }
 
 static inline void update_threshold_status(void) {
@@ -123,11 +125,16 @@ void *processing_run(void *arg) {
         // wait for a sample request
         binarysem_wait(&processing_request_sample);
 
-        update_distance();
-        update_threshold_status();
-
-        // notify other threads that a sample is available
-        binarysem_post(&processing_sample_available);
+        int err = update_distance();
+        if(err) {
+            // failure: try to sample again
+            printf("[Processing] sampling failed, retrying\n");
+            binarysem_post(&processing_request_sample);
+        } else {
+            // success: update threshold status and notify other threads
+            update_threshold_status();
+            binarysem_post(&processing_sample_available);
+        }
     }
     return NULL;
 }
