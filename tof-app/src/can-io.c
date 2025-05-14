@@ -14,6 +14,7 @@
 #include "tof.h"
 
 static int can_fd;
+static int sensor_id; // TODO set value
 
 /* ================================================================== */
 /*                              Receiver                              */
@@ -28,7 +29,7 @@ static void handle_message(struct can_msg_s *msg) {
     const int msg_type      = msg->cm_hdr.ch_id - msg_sensor_id;
 
     // check if message is addressed to this device (ID=0 is broadcast)
-    if(msg_sensor_id != 0 && msg_sensor_id != /*TODO*/0)
+    if(msg_sensor_id != 0 && msg_sensor_id != sensor_id)
         return;
 
     switch(msg_type) {
@@ -82,7 +83,7 @@ static void *receiver_run(void *arg) {
 
 static inline void write_distance(int distance, bool threshold_status) {
     const int datalen = sizeof(struct distance_sensor_can_sample);
-    const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID; // TODO sensor ID
+    const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor_id;
 
     struct can_msg_s msg;
 
