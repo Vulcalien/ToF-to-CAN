@@ -168,12 +168,17 @@ int can_io_start(void) {
     // print bit timing information
     print_bit_timing(can_fd);
 
+    // create receiver and sender threads
     pthread_t receiver_thread;
     pthread_t sender_thread;
 
-    // TODO handle errors
-    pthread_create(&receiver_thread, NULL, receiver_run, NULL);
-    pthread_create(&sender_thread,   NULL, sender_run,   NULL);
-
+    if(pthread_create(&receiver_thread, NULL, receiver_run, NULL)) {
+        printf("[CAN-IO] error creating receiver thread\n");
+        return 1;
+    }
+    if(pthread_create(&sender_thread, NULL, sender_run, NULL)) {
+        printf("[CAN-IO] error creating sender thread\n");
+        return 1;
+    }
     return 0;
 }
