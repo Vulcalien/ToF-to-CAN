@@ -14,3 +14,4 @@ extern int binarysem_destroy(binarysem *sem);
 
 extern int binarysem_post(binarysem *sem);
 extern int binarysem_wait(binarysem *sem);
+extern int binarysem_trywait(binarysem *sem);
