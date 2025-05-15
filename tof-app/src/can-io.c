@@ -34,6 +34,9 @@ static void handle_message(struct can_msg_s *msg) {
 
     switch(msg_type) {
         case DISTANCE_SENSOR_CAN_CONFIG_MASK_ID: {
+            // keep data ranging paused during configuration
+            tof_stop_ranging();
+
             struct distance_sensor_can_config *config =
                 (struct distance_sensor_can_config *) &msg->cm_data;
 
@@ -50,6 +53,9 @@ static void handle_message(struct can_msg_s *msg) {
 
             // set transmission settings
             transmit_set_timing(config->transmit_timing);
+
+            // resume data ranging
+            tof_start_ranging();
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
