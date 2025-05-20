@@ -12,7 +12,12 @@ bool processing_threshold_status;
 binarysem processing_request_sample;
 binarysem processing_sample_available;
 
-static int processing_mode;
+int processing_area;
+int processing_selector;
+
+// arguments used by the processing functions
+static int arg0, arg1;
+
 static int threshold;
 static int threshold_delay;
 
@@ -21,11 +26,9 @@ void processing_init(void) {
     binarysem_init(&processing_sample_available, 0); // available = 0
 }
 
-// process the area with bounds (x0, y0, x1, y1), and return the
-// quantity chosen through result_selector: 0=min, 1=max, 2=average
+// process the area with bounds (x0, y0, x1, y1)
 static int process_area(int16_t *matrix, uint8_t *status,
-                        int x0, int y0, int x1, int y1,
-                        int result_selector) {
+                        int x0, int y0, int x1, int y1) {
     int min = -1, max = -1, sum = -1, count = 0;
     for(int y = y0; y <= y1; y++) {
         for(int x = x0; x <= x1; x++) {
@@ -46,17 +49,19 @@ static int process_area(int16_t *matrix, uint8_t *status,
         }
     }
 
-    // return quantity chosen through result_selector
-    switch(result_selector) {
-        case 0: return min;
-        case 1: return max;
+    // return quantity chosen through processing_selector
+    switch(processing_selector) {
+        case PROCESSING_SELECTOR_MIN: return min;
+        case PROCESSING_SELECTOR_MAX: return max;
 
-        case 2: // average
+        case PROCESSING_SELECTOR_AVERAGE:
             if(count == 0 || sum < 0)
                 return -1;
             return (sum / count);
+
+        case PROCESSING_SELECTOR_ALL: // TODO
+            return -1;
     }
-    printf("[Processing] unknown result selector: %d\n", result_selector);
     return -1;
 }
 
@@ -69,37 +74,31 @@ static inline int update_distance(void) {
 
     // determine which area of the matrix should be processed
     int x0, y0, x1, y1;
-    int result_selector;
-    switch((processing_mode >> 6) & 3) {
-        case 0: { // matrix
-            result_selector = (processing_mode >> 4) & 3;
+    switch(processing_area) {
+        case PROCESSING_AREA_MATRIX:
             x0 = y0 = 0;
             x1 = y1 = tof_matrix_width;
-        } break;
+            break;
 
-        case 1: { // column
-            x0 = x1 = (processing_mode & 7);
+        case PROCESSING_AREA_COLUMN:
+            x0 = x1 = arg0;
             y0 = 0; y1 = tof_matrix_width;
-            result_selector = (processing_mode >> 4) & 3;
-        } break;
+            break;
 
-        case 2: { // row
+        case PROCESSING_AREA_ROW:
             x0 = 0; x1 = tof_matrix_width;
-            y0 = y1 = (processing_mode & 7);
-            result_selector = (processing_mode >> 4) & 3;
-        } break;
+            y0 = y1 = arg0;
+            break;
 
-        case 3: { // point
-            x0 = x1 = (processing_mode & 7);
-            y0 = y1 = (processing_mode >> 3) & 7;
-            result_selector = 0; // min
-        }
+        case PROCESSING_AREA_POINT:
+            x0 = x1 = arg0;
+            y0 = y1 = arg1;
+            break;
     }
 
     processing_distance = process_area(
         matrix, status_matrix,
-        x0, y0, x1, y1, // bounds of the area
-        result_selector
+        x0, y0, x1, y1 // bounds of the area
     );
     return (processing_distance < 0);
 }
@@ -132,7 +131,8 @@ void *processing_run(void *arg) {
             binarysem_post(&processing_request_sample);
         } else {
             // success: update threshold status and notify other threads
-            update_threshold_status();
+            if(processing_selector != PROCESSING_SELECTOR_ALL)
+                update_threshold_status();
             binarysem_post(&processing_sample_available);
         }
     }
@@ -140,12 +140,21 @@ void *processing_run(void *arg) {
 }
 
 int processing_set_mode(int mode) {
-    int err = 0; // TODO handle invalid modes?
+    processing_area = (mode >> 6) & 3;
 
-    processing_mode = mode;
+    if(processing_area == PROCESSING_AREA_POINT) {
+        processing_selector = PROCESSING_SELECTOR_MIN;
+        arg0 = mode & 7;
+        arg1 = (mode >> 3) & 7;
+    } else {
+        processing_selector = (mode >> 4) & 3;
+        arg0 = mode & 7;
+    }
+
     printf(
-        "[Processing] setting mode to %d (err=%d)\n",
-        mode, err
+        "[Processing] setting area to %d and selector to %d"
+        "arg0=%d, arg1=%d\n",
+        processing_area, processing_selector, arg0, arg1
     );
     return 0;
 }
