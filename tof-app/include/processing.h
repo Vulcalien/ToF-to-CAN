@@ -26,7 +26,7 @@ extern binarysem processing_sample_available;
 extern int processing_area;
 extern int processing_selector;
 
-extern void processing_init(void);
+extern int processing_init(void);
 
 extern void *processing_run(void *arg);
 

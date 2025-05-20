@@ -23,9 +23,29 @@ static int arg0, arg1;
 static int threshold;
 static int threshold_delay;
 
-void processing_init(void) {
-    binarysem_init(&processing_request_sample,   1); // request   = 1
-    binarysem_init(&processing_sample_available, 0); // available = 0
+int processing_init(void) {
+    int err = 0;
+
+    err = pthread_mutex_init(&processing_data_mutex, NULL);
+    if(err) {
+        printf("[Processing] error initializing data mutex\n");
+        return err;
+    }
+
+    // initialize request = 1
+    err = binarysem_init(&processing_request_sample, 1); // request = 1
+    if(err) {
+        printf("[Processing] error initializing request sample binarysem\n");
+        return err;
+    }
+
+    // initialize available = 0
+    err = binarysem_init(&processing_sample_available, 0); // available = 0
+    if(err) {
+        printf("[Processing] error initializing sample available binarysem\n");
+        return err;
+    }
+    return err;
 }
 
 // process the area with bounds (x0, y0, x1, y1)
