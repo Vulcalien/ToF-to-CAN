@@ -27,8 +27,8 @@ void processing_init(void) {
 }
 
 // process the area with bounds (x0, y0, x1, y1)
-static int process_area(int16_t *matrix, uint8_t *status,
-                        int x0, int y0, int x1, int y1) {
+static void process_area(int16_t *matrix, uint8_t *status,
+                         int x0, int y0, int x1, int y1) {
     int min = -1, max = -1, sum = -1, count = 0;
     for(int y = y0; y <= y1; y++) {
         for(int x = x0; x <= x1; x++) {
@@ -51,18 +51,23 @@ static int process_area(int16_t *matrix, uint8_t *status,
 
     // return quantity chosen through processing_selector
     switch(processing_selector) {
-        case PROCESSING_SELECTOR_MIN: return min;
-        case PROCESSING_SELECTOR_MAX: return max;
+        case PROCESSING_SELECTOR_MIN:
+            processing_distance = min;
+            break;
+
+        case PROCESSING_SELECTOR_MAX:
+            processing_distance = max;
+            break;
 
         case PROCESSING_SELECTOR_AVERAGE:
             if(count == 0 || sum < 0)
-                return -1;
-            return (sum / count);
+                processing_distance = -1;
+            processing_distance = (sum / count);
+            break;
 
         case PROCESSING_SELECTOR_ALL: // TODO
-            return -1;
+            break;
     }
-    return -1;
 }
 
 // return 0 if distance is valid
@@ -96,11 +101,10 @@ static inline int update_distance(void) {
             break;
     }
 
-    processing_distance = process_area(
-        matrix, status_matrix,
-        x0, y0, x1, y1 // bounds of the area
-    );
-    return (processing_distance < 0);
+    process_area(matrix, status_matrix, x0, y0, x1, y1);
+    if(processing_selector != PROCESSING_SELECTOR_ALL)
+        return (processing_distance < 0);
+    return 0;
 }
 
 static inline void update_threshold_status(void) {
