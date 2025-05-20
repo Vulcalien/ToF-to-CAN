@@ -71,18 +71,20 @@ uint8_t VL53L5CX_WrMulti(
     config.address   = (p_platform->address >> 1);
     config.addrlen   = 7;
 
-    uint8_t buf[I2C_MAX_PACKET_SIZE];
-    buf[0] = (RegisterAdress >> 8) & 0xff;
-    buf[1] = (RegisterAdress)      & 0xff;
-
     // write in blocks of I2C_MAX_PACKET_SIZE bytes or less
     while(size > 0 && !err) {
+        // write register address
+        uint8_t buf[I2C_MAX_PACKET_SIZE];
+        buf[0] = (RegisterAdress >> 8) & 0xff;
+        buf[1] = (RegisterAdress)      & 0xff;
+
         const int data_bytes = MIN(size, I2C_MAX_PACKET_SIZE - 2);
         memcpy(buf + 2, p_values, data_bytes);
         err = i2c_write(i2cmain, &config, buf, data_bytes + 2);
 
-        size -= data_bytes;
-        p_values += data_bytes;
+        size           -= data_bytes; // reduce count of bytes to write
+        p_values       += data_bytes; // move data pointer forward
+        RegisterAdress += data_bytes; // move register address forward
     }
     return err;
 }
@@ -100,17 +102,19 @@ uint8_t VL53L5CX_RdMulti(
     config.address   = (p_platform->address >> 1);
     config.addrlen   = 7;
 
-    uint8_t buf[2];
-    buf[0] = (RegisterAdress >> 8) & 0xff;
-    buf[1] = (RegisterAdress)      & 0xff;
-
     // read in blocks of I2C_MAX_PACKET_SIZE bytes or less
     while(size > 0 && !err) {
+        // write register address
+        uint8_t buf[2];
+        buf[0] = (RegisterAdress >> 8) & 0xff;
+        buf[1] = (RegisterAdress)      & 0xff;
+
         const int data_bytes = MIN(size, I2C_MAX_PACKET_SIZE - 2);
         err = i2c_writeread(i2cmain, &config, buf, 2, p_values, data_bytes);
 
-        size -= data_bytes;
-        p_values += data_bytes;
+        size           -= data_bytes; // reduce count of bytes to write
+        p_values       += data_bytes; // move data pointer forward
+        RegisterAdress += data_bytes; // move register address forward
     }
     return err;
 }
