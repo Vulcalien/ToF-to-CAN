@@ -1,11 +1,13 @@
 #include "processing.h"
 
 #include <stdio.h>
+#include <pthread.h>
 
 #include "binarysem.h"
 
 #include "tof.h"
 
+pthread_mutex_t processing_data_mutex;
 int  processing_distance;
 bool processing_threshold_status;
 
@@ -128,7 +130,15 @@ void *processing_run(void *arg) {
         // wait for a sample request
         binarysem_wait(&processing_request_sample);
 
-        int err = update_distance();
+        // lock data mutex
+        int err = pthread_mutex_lock(&processing_data_mutex);
+        if(err) {
+            printf("[Processing] error trying to lock data mutex\n");
+            continue;
+        }
+
+        // update data
+        err = update_distance();
         if(err) {
             // failure: try to sample again
             printf("[Processing] sampling failed, retrying\n");
@@ -138,6 +148,13 @@ void *processing_run(void *arg) {
             if(processing_selector != PROCESSING_SELECTOR_ALL)
                 update_threshold_status();
             binarysem_post(&processing_sample_available);
+        }
+
+        // unlock data mutex
+        err = pthread_mutex_unlock(&processing_data_mutex);
+        if(err) {
+            printf("[Processing] error trying to unlock data mutex\n");
+            continue;
         }
     }
     return NULL;

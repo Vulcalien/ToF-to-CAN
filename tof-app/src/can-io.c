@@ -87,9 +87,23 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
-static inline void write_distance(void) {
+static inline int write_distance(void) {
+    // lock data mutex
+    int err = pthread_mutex_lock(&processing_data_mutex);
+    if(err) {
+        printf("[CAN-IO] error trying to lock data mutex\n");
+        return err;
+    }
+
     const int  distance         = processing_distance;
     const bool threshold_status = processing_threshold_status;
+
+    // unlock data mutex
+    err = pthread_mutex_unlock(&processing_data_mutex);
+    if(err) {
+        printf("[CAN-IO] error trying to unlock data mutex\n");
+        return err;
+    }
 
     const int datalen = sizeof(struct distance_sensor_can_sample);
     const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor_id;
@@ -117,6 +131,7 @@ static inline void write_distance(void) {
     if(nbytes != msglen) {
         // TODO handle error
     }
+    return 0;
 }
 
 static void *sender_run(void *arg) {
