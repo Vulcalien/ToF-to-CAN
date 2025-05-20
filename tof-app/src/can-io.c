@@ -87,7 +87,10 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
-static inline void write_distance(int distance, bool threshold_status) {
+static inline void write_distance(void) {
+    const int  distance         = processing_distance;
+    const bool threshold_status = processing_threshold_status;
+
     const int datalen = sizeof(struct distance_sensor_can_sample);
     const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor_id;
 
@@ -123,12 +126,14 @@ static void *sender_run(void *arg) {
         // wait for a sample to become available
         binarysem_wait(&processing_sample_available);
 
-        // read distance and threshold status variables
-        const int  distance         = processing_distance;
-        const bool threshold_status = processing_threshold_status;
-
         // send CAN message
-        write_distance(distance, threshold_status);
+        if(processing_selector == PROCESSING_SELECTOR_ALL) {
+            // send multiple messages to transmit the whole area
+            ;// TODO
+        } else {
+            // write a single distance point with threshold status
+            write_distance();
+        }
 
         if(transmit_timing == TRANSMIT_CONTINUOUS)
             binarysem_post(&processing_request_sample);

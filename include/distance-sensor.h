@@ -15,7 +15,6 @@ struct distance_sensor_can_config {
 
     // data transmission
     unsigned int transmit_timing : 1; // 0=on-demand, 1=continuous
-    // TODO
 };
 
 struct distance_sensor_can_sample {
