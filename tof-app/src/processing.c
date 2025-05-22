@@ -104,16 +104,16 @@ static inline int update_distance(void) {
     switch(processing_area) {
         case PROCESSING_AREA_MATRIX:
             x0 = y0 = 0;
-            x1 = y1 = tof_matrix_width;
+            x1 = y1 = tof_matrix_width - 1;
             break;
 
         case PROCESSING_AREA_COLUMN:
             x0 = x1 = arg0;
-            y0 = 0; y1 = tof_matrix_width;
+            y0 = 0; y1 = tof_matrix_width - 1;
             break;
 
         case PROCESSING_AREA_ROW:
-            x0 = 0; x1 = tof_matrix_width;
+            x0 = 0; x1 = tof_matrix_width - 1;
             y0 = y1 = arg0;
             break;
 
