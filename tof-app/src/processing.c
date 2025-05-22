@@ -100,7 +100,7 @@ static inline int update_distance(void) {
     tof_read_data(&matrix, &status_matrix);
 
     // determine which area of the matrix should be processed
-    int x0, y0, x1, y1;
+    int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
     switch(processing_area) {
         case PROCESSING_AREA_MATRIX:
             x0 = y0 = 0;
