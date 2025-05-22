@@ -10,7 +10,7 @@ int tof_matrix_width = 4;  // default value
 
 static VL53L5CX_Configuration config;
 static VL53L5CX_ResultsData results;
-static bool ranging = false;
+static bool is_ranging = false;
 
 extern void set_i2c_rst(bool on);
 extern void set_LPn(bool on);
@@ -55,14 +55,18 @@ int tof_init(void) {
 }
 
 int tof_start_ranging(void) {
-    if(ranging)
+    if(is_ranging)
         return 0;
+    is_ranging = true;
+
     return vl53l5cx_start_ranging(&config);
 }
 
 int tof_stop_ranging(void) {
-    if(!ranging)
+    if(!is_ranging)
         return 0;
+    is_ranging = false;
+
     return vl53l5cx_stop_ranging(&config);
 }
 
