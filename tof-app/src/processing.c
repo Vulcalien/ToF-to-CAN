@@ -157,18 +157,14 @@ void *processing_run(void *arg) {
             continue;
         }
 
-        // update data
-        err = update_distance();
-        if(err) {
-            // failure: try to sample again
+        // update data (on fail, keep trying)
+        while(update_distance() != 0)
             printf("[Processing] sampling failed, retrying\n");
-            binarysem_post(&processing_request_sample);
-        } else {
-            // success: update threshold status and notify other threads
-            if(processing_selector != PROCESSING_SELECTOR_ALL)
-                update_threshold_status();
-            binarysem_post(&processing_sample_available);
-        }
+
+        // update threshold status and notify other threads
+        if(processing_selector != PROCESSING_SELECTOR_ALL)
+            update_threshold_status();
+        binarysem_post(&processing_sample_available);
 
         // unlock data mutex
         err = pthread_mutex_unlock(&processing_data_mutex);
