@@ -1,7 +1,6 @@
 #include "main.h"
 
 #include <stdio.h>
-#include <pthread.h>
 
 #include "processing.h"
 #include "can-io.h"
@@ -13,6 +12,6 @@ int main(int argc, char *argv[]) {
     processing_init();
 
     can_io_start();
-    processing_run(NULL);
+    processing_start();
     return 0;
 }

@@ -145,7 +145,9 @@ static inline void update_threshold_status(void) {
         processing_threshold_status = current;
 }
 
-void *processing_run(void *arg) {
+static void *processing_run(void *arg) {
+    printf("[Processing] thread started\n");
+
     while(true) {
         // wait for a sample request
         binarysem_wait(&processing_request_sample);
@@ -174,6 +176,20 @@ void *processing_run(void *arg) {
         }
     }
     return NULL;
+}
+
+int processing_start(void) {
+    pthread_t thread;
+    if(pthread_create(&thread, NULL, processing_run, NULL)) {
+        printf("[Processing] error creating thread\n");
+        return 1;
+    }
+
+    // DEBUG
+    void *retval;
+    pthread_join(thread, &retval);
+
+    return 0;
 }
 
 int processing_set_mode(int mode) {
