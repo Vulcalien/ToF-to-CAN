@@ -1,6 +1,7 @@
 #ifndef DISTANCE_SENSOR_CAN_INTERFACE
 #define DISTANCE_SENSOR_CAN_INTERFACE
 
+#define DISTANCE_SENSOR_CAN_CONFIG_SIZE 8
 struct distance_sensor_can_config {
     // ToF settings
     unsigned int resolution        : 8; // 16 or 64
@@ -17,9 +18,12 @@ struct distance_sensor_can_config {
     unsigned int transmit_timing : 1; // 0=on-demand, 1=continuous
 };
 
+#define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
 struct distance_sensor_can_sample {
     unsigned short distance;
     bool below_threshold;
+
+    char _padding[1];
 };
 
 // number of distinct sensor IDs (ID=0 is broadcast)
