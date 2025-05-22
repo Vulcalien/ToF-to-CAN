@@ -30,7 +30,6 @@ static inline void tof_reset(void) {
 }
 
 int tof_init(void) {
-    printf("[ToF] initializing\n");
     config.platform.address = VL53L5CX_DEFAULT_I2C_ADDRESS;
 
     printf("[ToF] resetting sensor\n");
