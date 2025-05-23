@@ -1,6 +1,7 @@
 #include "can-io.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/ioctl.h>
@@ -20,7 +21,9 @@ static int sensor_id; // TODO set value
 /*                              Receiver                              */
 /* ================================================================== */
 
-static void handle_message(struct can_msg_s *msg) {
+#define RECEIVER_BUFFER_SIZE (sizeof(struct can_msg_s))
+
+static void handle_message(const struct can_msg_s *msg) {
     // TODO ignore confirmation messages???
     /*if(msg->cm_hdr.tcf)*/
         /*return;*/
@@ -74,11 +77,26 @@ static void handle_message(struct can_msg_s *msg) {
 static void *receiver_run(void *arg) {
     printf("[CAN-IO] receiver thread started\n");
 
+    static char buffer[RECEIVER_BUFFER_SIZE];
     while(true) {
-        struct can_msg_s msg;
-        // TODO read can_fd
+        int offset = 0;
 
-        handle_message(&msg);
+        // read CAN message(s)
+        int nbytes = read(can_fd, buffer, RECEIVER_BUFFER_SIZE);
+        if(nbytes < 0) {
+            printf("[CAN-IO] error reading from CAN device\n");
+            continue;
+        }
+
+        // handle CAN message(s)
+        while(offset < nbytes) {
+            struct can_msg_s *msg = (struct can_msg_s *) &buffer[offset];
+            handle_message(msg);
+
+            // move buffer offset forward
+            int msglen = CAN_MSGLEN(msg->cm_hdr.ch_dlc);
+            offset += msglen;
+        }
     }
     return NULL;
 }
