@@ -11,17 +11,35 @@
 
 #include "distance-sensor.h"
 #include "processing.h"
-#include "transmit.h"
 #include "tof.h"
+
+#define TIMING_ON_DEMAND  0
+#define TIMING_CONTINUOUS 1
 
 static int can_fd;
 static int sensor_id; // TODO set value
+
+static int transmit_timing;
 
 /* ================================================================== */
 /*                              Receiver                              */
 /* ================================================================== */
 
 #define RECEIVER_BUFFER_SIZE (sizeof(struct can_msg_s))
+
+static inline int set_transmit_timing(int timing) {
+    int err = 0;
+
+    // TODO check if timing is valid
+    if(true) transmit_timing = timing;
+    else err = 1;
+
+    printf(
+        "[Transmit] setting transmit timing to %d (err=%d)\n",
+        timing, err
+    );
+    return err;
+}
 
 static void handle_message(const struct can_msg_s *msg) {
     // TODO ignore confirmation messages???
@@ -55,7 +73,7 @@ static void handle_message(const struct can_msg_s *msg) {
             processing_set_threshold_delay(config->threshold_delay);
 
             // set transmission settings
-            transmit_set_timing(config->transmit_timing);
+            set_transmit_timing(config->transmit_timing);
 
             // resume data ranging
             tof_start_ranging();
@@ -65,7 +83,7 @@ static void handle_message(const struct can_msg_s *msg) {
             // check if RTR bit is set
             if(msg->cm_hdr.ch_rtr) {
                 // if transmit timing is on-demand, request sample
-                if(transmit_timing == TRANSMIT_ON_DEMAND)
+                if(transmit_timing == TIMING_ON_DEMAND)
                     binarysem_post(&processing_request_sample);
             }
         } break;
@@ -167,7 +185,7 @@ static void *sender_run(void *arg) {
         }
 
         // if transmit timing is continuous, request sample
-        if(transmit_timing == TRANSMIT_CONTINUOUS)
+        if(transmit_timing == TIMING_CONTINUOUS)
             binarysem_post(&processing_request_sample);
     }
     return NULL;
