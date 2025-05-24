@@ -10,13 +10,48 @@ struct distance_sensor_can_config {
     unsigned int sharpener         : 7; // 0...99%
 
     // processing settings
-    unsigned int processing_mode : 8;  // TODO explain this field
+    unsigned int processing_mode : 8;  // see below
     unsigned int threshold       : 16; // 0...4000mm
     unsigned int threshold_delay : 8;  // 0...255
 
     // data transmission
-    unsigned int transmit_timing : 1; // 0=on-demand, 1=continuous
+    unsigned int transmit_timing    : 1; // 0=on-demand, 1=continuous
+    unsigned int transmit_condition : 2; // see below
 };
+
+// processing_mode:
+//
+// Bits 6-7 identify the area to process:
+//     0=matrix, 1=column, 2=row, 3=point
+// Other bits are treated differently based on the specified area.
+//
+// if area == matrix:
+//   + Bit +- Function --------+- Values ------------------------+
+//   | 0-3 |  < unused >       |                                 |
+//   | 4-5 |  result selector  |  0=min, 1=max, 2=average, 3=all |
+//   | 6-7 |  area             |  0=matrix                       |
+//   +-----+-------------------+---------------------------------+
+//
+// if (area == column) or (area == row):
+//   + Bit +- Function --------+- Values ------------------------+
+//   | 0-2 |  column/row       |  0...7                          |
+//   | 3   |  < unused >       |                                 |
+//   | 4-5 |  result selector  |  0=min, 1=max, 2=average, 3=all |
+//   | 6-7 |  area             |  1=column, 2=row                |
+//   +-----+-------------------+---------------------------------+
+//
+// if area == point:
+//   + Bit +- Function --------+- Values ------------------------+
+//   | 0-2 |  x coordinate     |  0...7                          |
+//   | 3-5 |  y coordinate     |  0...7                          |
+//   | 6-7 |  area             |  2=point                        |
+//   +-----+-------------------+---------------------------------+
+
+// transmit_condition:
+// - 0=always
+// - 1=any threshold event
+// - 2=below threshold event
+// - 3=above threshold event
 
 #define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
 struct distance_sensor_can_sample {
