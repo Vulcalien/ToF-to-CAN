@@ -16,10 +16,16 @@
 #define TIMING_ON_DEMAND  0
 #define TIMING_CONTINUOUS 1
 
+#define CONDITION_ALWAYS          0
+#define CONDITION_BELOW_THRESHOLD 1
+#define CONDITION_ABOVE_THRESHOLD 2
+#define CONDITION_THRESHOLD_EVENT 3
+
 static int can_fd;
 static int sensor_id; // TODO set value
 
 static int transmit_timing;
+static int transmit_condition;
 
 /* ================================================================== */
 /*                              Receiver                              */
@@ -37,6 +43,20 @@ static inline int set_transmit_timing(int timing) {
     printf(
         "[CAN-IO] setting transmit timing to %d (err=%d)\n",
         timing, err
+    );
+    return err;
+}
+
+static inline int set_transmit_condition(int condition) {
+    int err = 0;
+    if(condition >= 0 && condition < 4)
+        transmit_condition = condition;
+    else
+        err = 1;
+
+    printf(
+        "[CAN-IO] setting transmit condition to %d (err=%d)\n",
+        condition, err
     );
     return err;
 }
@@ -74,6 +94,7 @@ static void handle_message(const struct can_msg_s *msg) {
 
             // set transmission settings
             set_transmit_timing(config->transmit_timing);
+            set_transmit_condition(config->transmit_condition);
 
             // resume data ranging
             tof_start_ranging();
