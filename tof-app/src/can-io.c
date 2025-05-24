@@ -62,13 +62,11 @@ static void handle_message(const struct can_msg_s *msg) {
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
-            // check if message is a 'Remote Transmit Request' and,
-            // if so, that the transmit timing is 'on-demand'
+            // check if RTR bit is set
             if(msg->cm_hdr.ch_rtr) {
-                if(transmit_timing == TRANSMIT_ON_DEMAND) {
-                    // request a new sample
+                // if transmit timing is on-demand, request sample
+                if(transmit_timing == TRANSMIT_ON_DEMAND)
                     binarysem_post(&processing_request_sample);
-                }
             }
         } break;
     }
@@ -168,6 +166,7 @@ static void *sender_run(void *arg) {
             write_distance();
         }
 
+        // if transmit timing is continuous, request sample
         if(transmit_timing == TRANSMIT_CONTINUOUS)
             binarysem_post(&processing_request_sample);
     }
