@@ -29,13 +29,13 @@ static int transmit_timing;
 
 static inline int set_transmit_timing(int timing) {
     int err = 0;
-
-    // TODO check if timing is valid
-    if(true) transmit_timing = timing;
-    else err = 1;
+    if(timing >= 0 && timing < 2)
+        transmit_timing = timing;
+    else
+        err = 1;
 
     printf(
-        "[Transmit] setting transmit timing to %d (err=%d)\n",
+        "[CAN-IO] setting transmit timing to %d (err=%d)\n",
         timing, err
     );
     return err;
