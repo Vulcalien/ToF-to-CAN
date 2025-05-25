@@ -202,12 +202,12 @@ static void *sender_run(void *arg) {
         binarysem_wait(&processing_data_available);
 
         // send CAN message
-        if(processing_selector == PROCESSING_SELECTOR_ALL) {
-            // send multiple messages to transmit the whole area
-            ;// TODO
-        } else {
+        if(processing_data_length == 1) {
             // write a single distance point with threshold status
             write_distance();
+        } else {
+            // send multiple messages to transmit the whole area
+            ;// TODO
         }
 
         // if timing is continuous, request more data

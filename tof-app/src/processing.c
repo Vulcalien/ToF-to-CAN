@@ -8,17 +8,27 @@
 
 #include "tof.h"
 
+#define AREA_MATRIX 0
+#define AREA_COLUMN 1
+#define AREA_ROW    2
+#define AREA_POINT  3
+
+#define SELECTOR_MIN     0
+#define SELECTOR_MAX     1
+#define SELECTOR_AVERAGE 2
+#define SELECTOR_ALL     3
+
 pthread_mutex_t processing_data_mutex;
 binarysem       processing_data_available;
+int             processing_data_length;
 
 int  processing_distance;
 bool processing_threshold_status;
 
-int processing_selector;
-
 static struct {
     int x0, y0, x1, y1;
 } bounds;
+static int result_selector;
 
 static int threshold;
 static int threshold_delay;
@@ -104,26 +114,26 @@ static int update_data(void) {
         return 1;
     }
 
-    // update data based on the selector
-    switch(processing_selector) {
-        case PROCESSING_SELECTOR_MIN:
+    // update data based on result selector
+    switch(result_selector) {
+        case SELECTOR_MIN:
             processing_distance = min;
             break;
 
-        case PROCESSING_SELECTOR_MAX:
+        case SELECTOR_MAX:
             processing_distance = max;
             break;
 
-        case PROCESSING_SELECTOR_AVERAGE:
+        case SELECTOR_AVERAGE:
             processing_distance = (sum / count);
             break;
 
-        case PROCESSING_SELECTOR_ALL: // TODO
+        case SELECTOR_ALL: // TODO
             break;
     }
 
-    // if the data is a single distance value, update threshold status
-    if(processing_selector != PROCESSING_SELECTOR_ALL)
+    // if there is only one data value, update threshold status
+    if(processing_data_length == 1)
         update_threshold_status();
 
     // unlock data mutex
@@ -169,47 +179,58 @@ int processing_set_mode(int mode) {
 
     // set bounds of area to process and result selector
     switch(area) {
-        case PROCESSING_AREA_MATRIX: {
+        case AREA_MATRIX: {
             const int selector = (mode >> 4) & 3;
 
             bounds.x0 = bounds.y0 = 0;
             bounds.x1 = bounds.y1 = tof_matrix_width - 1;
-            processing_selector = selector;
+            result_selector = selector;
         } break;
 
-        case PROCESSING_AREA_COLUMN: {
+        case AREA_COLUMN: {
             const int column = (mode & 7);
             const int selector = (mode >> 4) & 3;
 
             bounds.x0 = bounds.x1 = column;
             bounds.y0 = 0;
             bounds.y1 = tof_matrix_width - 1;
-            processing_selector = selector;
+            result_selector = selector;
         } break;
 
-        case PROCESSING_AREA_ROW: {
+        case AREA_ROW: {
             const int row = (mode & 7);
             const int selector = (mode >> 4) & 3;
 
             bounds.x0 = 0;
             bounds.x1 = tof_matrix_width - 1;
             bounds.y0 = bounds.y1 = row;
-            processing_selector = selector;
+            result_selector = selector;
         } break;
 
-        case PROCESSING_AREA_POINT: {
+        case AREA_POINT: {
             const int x = (mode & 7);
             const int y = (mode >> 3) & 7;
 
             bounds.x0 = bounds.x1 = x;
             bounds.y0 = bounds.y1 = y;
-            processing_selector = PROCESSING_SELECTOR_MIN;
+            result_selector = SELECTOR_MIN;
         } break;
     }
 
+    // set data length
+    if(result_selector == SELECTOR_ALL) {
+        const int width  = (bounds.x1 - bounds.x0 + 1);
+        const int height = (bounds.y1 - bounds.y0 + 1);
+        processing_data_length = width * height;
+    } else {
+        processing_data_length = 1;
+    }
+
     printf(
-        "[Processing] setting area to (%d, %d, %d, %d) and selector to %d\n",
-        bounds.x0, bounds.y0, bounds.x1, bounds.y1, processing_selector
+        "[Processing] setting area to (%d, %d, %d, %d), "
+        "result selector to %d, data length to %d\n",
+        bounds.x0, bounds.y0, bounds.x1, bounds.y1,
+        result_selector, processing_data_length
     );
     return 0;
 }
