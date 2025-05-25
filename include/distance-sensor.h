@@ -44,7 +44,7 @@ struct distance_sensor_can_config {
 //   + Bit +- Function --------+- Values ------------------------+
 //   | 0-2 |  x coordinate     |  0...7                          |
 //   | 3-5 |  y coordinate     |  0...7                          |
-//   | 6-7 |  area             |  2=point                        |
+//   | 6-7 |  area             |  3=point                        |
 //   +-----+-------------------+---------------------------------+
 
 // transmit_condition:
