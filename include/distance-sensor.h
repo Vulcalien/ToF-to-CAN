@@ -55,7 +55,7 @@ struct distance_sensor_can_config {
 
 #define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
 struct distance_sensor_can_sample {
-    unsigned short distance;
+    short distance;
     bool below_threshold;
 
     char _padding[1];

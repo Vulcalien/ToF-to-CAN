@@ -152,8 +152,8 @@ static inline int write_distance(void) {
         return err;
     }
 
-    const int  distance         = processing_distance;
-    const bool threshold_status = processing_threshold_status;
+    const short distance         = processing_data[0];
+    const bool  threshold_status = processing_threshold_status;
 
     // unlock data mutex
     err = pthread_mutex_unlock(&processing_data_mutex);

@@ -22,8 +22,8 @@ pthread_mutex_t processing_data_mutex;
 binarysem       processing_data_available;
 int             processing_data_length;
 
-int  processing_distance;
-bool processing_threshold_status;
+short processing_data[64];
+bool  processing_threshold_status;
 
 static struct {
     int x0, y0, x1, y1;
@@ -84,7 +84,7 @@ static void update_threshold_status(void) {
     static bool previous    = false;
     static int  consistency = 0;
 
-    const bool current = (processing_distance < threshold);
+    const bool current = (processing_data[0] < threshold);
     if(current == previous)
         consistency++;
     else
@@ -117,15 +117,15 @@ static int update_data(void) {
     // update data based on result selector
     switch(result_selector) {
         case SELECTOR_MIN:
-            processing_distance = min;
+            processing_data[0] = min;
             break;
 
         case SELECTOR_MAX:
-            processing_distance = max;
+            processing_data[0] = max;
             break;
 
         case SELECTOR_AVERAGE:
-            processing_distance = (sum / count);
+            processing_data[0] = (sum / count);
             break;
 
         case SELECTOR_ALL: // TODO

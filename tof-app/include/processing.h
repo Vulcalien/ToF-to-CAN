@@ -10,8 +10,8 @@ extern pthread_mutex_t processing_data_mutex;
 extern binarysem       processing_data_available;
 extern int             processing_data_length;
 
-extern int  processing_distance;
-extern bool processing_threshold_status;
+extern short processing_data[64];
+extern bool  processing_threshold_status;
 
 extern int processing_init(void);
 extern int processing_start(void);
