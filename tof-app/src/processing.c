@@ -1,6 +1,7 @@
 #include "processing.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <pthread.h>
 
 #include "binarysem.h"
@@ -13,11 +14,11 @@ binarysem       processing_data_available;
 int  processing_distance;
 bool processing_threshold_status;
 
-int processing_area;
 int processing_selector;
 
-// arguments used by the processing functions
-static int arg0, arg1;
+static struct {
+    int x0, y0, x1, y1;
+} bounds;
 
 static int threshold;
 static int threshold_delay;
@@ -37,12 +38,16 @@ int processing_init(void) {
     return 0;
 }
 
-// process the area with bounds (x0, y0, x1, y1)
-static void process_area(int16_t *matrix, uint8_t *status,
-                         int x0, int y0, int x1, int y1) {
-    int min = -1, max = -1, sum = -1, count = 0;
-    for(int y = y0; y <= y1; y++) {
-        for(int x = x0; x <= x1; x++) {
+static int process_matrix(int16_t *matrix, uint8_t *status,
+                          int *count, int *sum, int *min, int *max) {
+    *count = 0;
+    *sum   = 0;
+    *min   = INT_MAX;
+    *max   = INT_MIN;
+
+    // look for data within the configured bounds
+    for(int y = bounds.y0; y <= bounds.y1; y++) {
+        for(int x = bounds.x0; x <= bounds.x1; x++) {
             const int index = x + y * tof_matrix_width;
             const int sample = matrix[index];
 
@@ -50,75 +55,22 @@ static void process_area(int16_t *matrix, uint8_t *status,
             if(status[index] != 5 && status[index] != 9)
                 continue;
 
-            if(min < 0 || sample < min) min = sample;
-            if(max < 0 || sample > max) max = sample;
+            *count += 1;
+            *sum   += sample;
 
-            if(sum < 0) sum = sample;
-            else sum += sample;
+            if(*min > sample)
+                *min = sample;
 
-            count++;
+            if(*max < sample)
+                *max = sample;
         }
     }
 
-    // return quantity chosen through processing_selector
-    switch(processing_selector) {
-        case PROCESSING_SELECTOR_MIN:
-            processing_distance = min;
-            break;
-
-        case PROCESSING_SELECTOR_MAX:
-            processing_distance = max;
-            break;
-
-        case PROCESSING_SELECTOR_AVERAGE:
-            if(count == 0 || sum < 0)
-                processing_distance = -1;
-            processing_distance = (sum / count);
-            break;
-
-        case PROCESSING_SELECTOR_ALL: // TODO
-            break;
-    }
+    // if no valid samples were found, return an error
+    return (*count == 0);
 }
 
-// return 0 if distance is valid
-static inline int update_distance(void) {
-    int16_t *matrix;
-    uint8_t *status_matrix;
-
-    tof_read_data(&matrix, &status_matrix);
-
-    // determine which area of the matrix should be processed
-    int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
-    switch(processing_area) {
-        case PROCESSING_AREA_MATRIX:
-            x0 = y0 = 0;
-            x1 = y1 = tof_matrix_width - 1;
-            break;
-
-        case PROCESSING_AREA_COLUMN:
-            x0 = x1 = arg0;
-            y0 = 0; y1 = tof_matrix_width - 1;
-            break;
-
-        case PROCESSING_AREA_ROW:
-            x0 = 0; x1 = tof_matrix_width - 1;
-            y0 = y1 = arg0;
-            break;
-
-        case PROCESSING_AREA_POINT:
-            x0 = x1 = arg0;
-            y0 = y1 = arg1;
-            break;
-    }
-
-    process_area(matrix, status_matrix, x0, y0, x1, y1);
-    if(processing_selector != PROCESSING_SELECTOR_ALL)
-        return (processing_distance < 0);
-    return 0;
-}
-
-static inline void update_threshold_status(void) {
+static void update_threshold_status(void) {
     static bool previous    = false;
     static int  consistency = 0;
 
@@ -134,37 +86,71 @@ static inline void update_threshold_status(void) {
         processing_threshold_status = current;
 }
 
+static int update_data(void) {
+    int16_t *matrix;
+    uint8_t *status;
+    tof_read_data(&matrix, &status);
+
+    // process the matrix to gather data about its elements
+    int count, sum, min, max;
+    if(process_matrix(matrix, status, &count, &sum, &min, &max)) {
+        printf("[Processing] no valid data point was found\n");
+        return 1;
+    }
+
+    // lock data mutex
+    if(pthread_mutex_lock(&processing_data_mutex)) {
+        printf("[Processing] error trying to lock data mutex\n");
+        return 1;
+    }
+
+    // update data based on the selector
+    switch(processing_selector) {
+        case PROCESSING_SELECTOR_MIN:
+            processing_distance = min;
+            break;
+
+        case PROCESSING_SELECTOR_MAX:
+            processing_distance = max;
+            break;
+
+        case PROCESSING_SELECTOR_AVERAGE:
+            processing_distance = (sum / count);
+            break;
+
+        case PROCESSING_SELECTOR_ALL: // TODO
+            break;
+    }
+
+    // if the data is a single distance value, update threshold status
+    if(processing_selector != PROCESSING_SELECTOR_ALL)
+        update_threshold_status();
+
+    // unlock data mutex
+    if(pthread_mutex_unlock(&processing_data_mutex)) {
+        printf("[Processing] error trying to unlock data mutex\n");
+        return 1;
+    }
+    return 0;
+}
+
 static void *processing_run(void *arg) {
     printf("[Processing] thread started\n");
 
     while(true) {
-        // lock data mutex
-        int err = pthread_mutex_lock(&processing_data_mutex);
-        if(err) {
-            printf("[Processing] error trying to lock data mutex\n");
-            continue;
-        }
-
-        // update data (on fail, keep trying)
-        while(update_distance() != 0)
+        while(update_data())
             printf("[Processing] sampling failed, retrying\n");
 
-        // update threshold status and notify other threads
-        if(processing_selector != PROCESSING_SELECTOR_ALL)
-            update_threshold_status();
+        // notify other threads that data is available
         binarysem_post(&processing_data_available);
-
-        // unlock data mutex
-        err = pthread_mutex_unlock(&processing_data_mutex);
-        if(err) {
-            printf("[Processing] error trying to unlock data mutex\n");
-            continue;
-        }
     }
     return NULL;
 }
 
 int processing_start(void) {
+    // set default processing mode
+    processing_set_mode(0);
+
     pthread_t thread;
     if(pthread_create(&thread, NULL, processing_run, NULL)) {
         printf("[Processing] error creating thread\n");
@@ -179,21 +165,51 @@ int processing_start(void) {
 }
 
 int processing_set_mode(int mode) {
-    processing_area = (mode >> 6) & 3;
+    const int area = (mode >> 6) & 3;
 
-    if(processing_area == PROCESSING_AREA_POINT) {
-        processing_selector = PROCESSING_SELECTOR_MIN;
-        arg0 = mode & 7;
-        arg1 = (mode >> 3) & 7;
-    } else {
-        processing_selector = (mode >> 4) & 3;
-        arg0 = mode & 7;
+    // set bounds of area to process and result selector
+    switch(area) {
+        case PROCESSING_AREA_MATRIX: {
+            const int selector = (mode >> 4) & 3;
+
+            bounds.x0 = bounds.y0 = 0;
+            bounds.x1 = bounds.y1 = tof_matrix_width - 1;
+            processing_selector = selector;
+        } break;
+
+        case PROCESSING_AREA_COLUMN: {
+            const int column = (mode & 7);
+            const int selector = (mode >> 4) & 3;
+
+            bounds.x0 = bounds.x1 = column;
+            bounds.y0 = 0;
+            bounds.y1 = tof_matrix_width - 1;
+            processing_selector = selector;
+        } break;
+
+        case PROCESSING_AREA_ROW: {
+            const int row = (mode & 7);
+            const int selector = (mode >> 4) & 3;
+
+            bounds.x0 = 0;
+            bounds.x1 = tof_matrix_width - 1;
+            bounds.y0 = bounds.y1 = row;
+            processing_selector = selector;
+        } break;
+
+        case PROCESSING_AREA_POINT: {
+            const int x = (mode & 7);
+            const int y = (mode >> 3) & 7;
+
+            bounds.x0 = bounds.x1 = x;
+            bounds.y0 = bounds.y1 = y;
+            processing_selector = PROCESSING_SELECTOR_MIN;
+        } break;
     }
 
     printf(
-        "[Processing] setting area to %d and selector to %d"
-        "arg0=%d, arg1=%d\n",
-        processing_area, processing_selector, arg0, arg1
+        "[Processing] setting area to (%d, %d, %d, %d) and selector to %d\n",
+        bounds.x0, bounds.y0, bounds.x1, bounds.y1, processing_selector
     );
     return 0;
 }

@@ -22,7 +22,6 @@ extern binarysem       processing_data_available;
 extern int  processing_distance;
 extern bool processing_threshold_status;
 
-extern int processing_area;
 extern int processing_selector;
 
 extern int processing_init(void);
