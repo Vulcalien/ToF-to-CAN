@@ -27,6 +27,8 @@ static int sensor_id; // TODO set value
 static int transmit_timing;
 static int transmit_condition;
 
+static sem_t request_data;
+
 /* ================================================================== */
 /*                              Receiver                              */
 /* ================================================================== */
@@ -39,6 +41,9 @@ static inline int set_transmit_timing(int timing) {
         transmit_timing = timing;
     else
         err = 1;
+
+    // TODO if switching to continuous mode, send a data request to
+    // unlock the semaphore wait.
 
     printf(
         "[CAN-IO] setting transmit timing to %d (err=%d)\n",
@@ -101,12 +106,9 @@ static void handle_message(const struct can_msg_s *msg) {
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
-            // check if RTR bit is set
-            if(msg->cm_hdr.ch_rtr) {
-                // if transmit timing is on-demand, request sample
-                if(transmit_timing == TIMING_ON_DEMAND)
-                    binarysem_post(&processing_request_sample);
-            }
+            // if RTR bit is set, request data
+            if(msg->cm_hdr.ch_rtr)
+                sem_post(&request_data);
         } break;
     }
 }
@@ -193,8 +195,11 @@ static void *sender_run(void *arg) {
     printf("[CAN-IO] sender thread started\n");
 
     while(true) {
-        // wait for a sample to become available
-        binarysem_wait(&processing_sample_available);
+        // wait for a request
+        sem_wait(&request_data);
+
+        // wait for data to become available
+        binarysem_wait(&processing_data_available);
 
         // send CAN message
         if(processing_selector == PROCESSING_SELECTOR_ALL) {
@@ -205,9 +210,9 @@ static void *sender_run(void *arg) {
             write_distance();
         }
 
-        // if transmit timing is continuous, request sample
+        // if timing is continuous, request more data
         if(transmit_timing == TIMING_CONTINUOUS)
-            binarysem_post(&processing_request_sample);
+            sem_post(&request_data);
     }
     return NULL;
 }
@@ -243,6 +248,12 @@ int can_io_start(void) {
 
     // print bit timing information
     print_bit_timing(can_fd);
+
+    // initialize request data semaphore
+    if(sem_init(&request_data, 0, 0)) {
+        printf("[CAN-IO] error initializing request data semaphore\n");
+        return 1;
+    }
 
     // create receiver and sender threads
     pthread_t receiver_thread;

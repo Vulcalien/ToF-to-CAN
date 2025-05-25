@@ -17,11 +17,10 @@
 #define PROCESSING_SELECTOR_ALL     3
 
 extern pthread_mutex_t processing_data_mutex;
+extern binarysem       processing_data_available;
+
 extern int  processing_distance;
 extern bool processing_threshold_status;
-
-extern binarysem processing_request_sample;
-extern binarysem processing_sample_available;
 
 extern int processing_area;
 extern int processing_selector;

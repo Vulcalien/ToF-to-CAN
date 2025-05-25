@@ -8,11 +8,10 @@
 #include "tof.h"
 
 pthread_mutex_t processing_data_mutex;
+binarysem       processing_data_available;
+
 int  processing_distance;
 bool processing_threshold_status;
-
-binarysem processing_request_sample;
-binarysem processing_sample_available;
 
 int processing_area;
 int processing_selector;
@@ -24,28 +23,18 @@ static int threshold;
 static int threshold_delay;
 
 int processing_init(void) {
-    int err = 0;
-
-    err = pthread_mutex_init(&processing_data_mutex, NULL);
-    if(err) {
+    // initialize data mutex
+    if(pthread_mutex_init(&processing_data_mutex, NULL)) {
         printf("[Processing] error initializing data mutex\n");
-        return err;
+        return 1;
     }
 
-    // initialize request = 1
-    err = binarysem_init(&processing_request_sample, 1); // request = 1
-    if(err) {
-        printf("[Processing] error initializing request sample binarysem\n");
-        return err;
+    // initialize data available semaphore
+    if(binarysem_init(&processing_data_available, 0)) {
+        printf("[Processing] error initializing data available binarysem\n");
+        return 1;
     }
-
-    // initialize available = 0
-    err = binarysem_init(&processing_sample_available, 0); // available = 0
-    if(err) {
-        printf("[Processing] error initializing sample available binarysem\n");
-        return err;
-    }
-    return err;
+    return 0;
 }
 
 // process the area with bounds (x0, y0, x1, y1)
@@ -149,9 +138,6 @@ static void *processing_run(void *arg) {
     printf("[Processing] thread started\n");
 
     while(true) {
-        // wait for a sample request
-        binarysem_wait(&processing_request_sample);
-
         // lock data mutex
         int err = pthread_mutex_lock(&processing_data_mutex);
         if(err) {
@@ -166,7 +152,7 @@ static void *processing_run(void *arg) {
         // update threshold status and notify other threads
         if(processing_selector != PROCESSING_SELECTOR_ALL)
             update_threshold_status();
-        binarysem_post(&processing_sample_available);
+        binarysem_post(&processing_data_available);
 
         // unlock data mutex
         err = pthread_mutex_unlock(&processing_data_mutex);
