@@ -144,28 +144,11 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
-static inline int write_distance(void) {
-    // lock data mutex
-    int err = pthread_mutex_lock(&processing_data_mutex);
-    if(err) {
-        printf("[CAN-IO] error trying to lock data mutex\n");
-        return err;
-    }
-
-    const short distance         = processing_data[0];
-    const bool  threshold_status = processing_threshold_status;
-
-    // unlock data mutex
-    err = pthread_mutex_unlock(&processing_data_mutex);
-    if(err) {
-        printf("[CAN-IO] error trying to unlock data mutex\n");
-        return err;
-    }
+static int write_sample(void) {
+    struct can_msg_s msg;
 
     const int datalen = sizeof(struct distance_sensor_can_sample);
     const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor_id;
-
-    struct can_msg_s msg;
 
     // set CAN header
     msg.cm_hdr = (struct can_hdr_s) {
@@ -175,16 +158,28 @@ static inline int write_distance(void) {
         .ch_tcf = false
     };
 
+    // lock data mutex
+    if(pthread_mutex_lock(&processing_data_mutex)) {
+        printf("[CAN-IO] error trying to lock data mutex\n");
+        return 1;
+    }
+
     // set CAN data
     struct distance_sensor_can_sample data = {
-        .distance        = distance,
-        .below_threshold = threshold_status
+        .distance        = processing_data[0],
+        .below_threshold = processing_threshold_status
     };
     memcpy(msg.cm_data, &data, datalen);
 
+    // unlock data mutex
+    if(pthread_mutex_unlock(&processing_data_mutex)) {
+        printf("[CAN-IO] error trying to unlock data mutex\n");
+        return 1;
+    }
+
     // write CAN message
-    int msglen = CAN_MSGLEN(datalen);
-    int nbytes = write(can_fd, &msg, msglen);
+    const int msglen = CAN_MSGLEN(datalen);
+    const int nbytes = write(can_fd, &msg, msglen);
     if(nbytes != msglen) {
         // TODO handle error
     }
@@ -201,13 +196,11 @@ static void *sender_run(void *arg) {
         // wait for data to become available
         binarysem_wait(&processing_data_available);
 
-        // send CAN message
+        // send CAN message(s)
         if(processing_data_length == 1) {
-            // write a single distance point with threshold status
-            write_distance();
+            write_sample();
         } else {
-            // send multiple messages to transmit the whole area
-            ;// TODO
+            // TODO send multiple messages to transmit all data
         }
 
         // if timing is continuous, request more data
