@@ -174,7 +174,7 @@ static int write_single_sample(short distance, bool threshold_status) {
     return 0;
 }
 
-static bool condition_satisfied(bool threshold_status) {
+static bool should_transmit(bool threshold_status, bool threshold_event) {
     // if there are multiple data points, ignore transmit condition
     if(processing_data_length > 1)
         return true;
@@ -190,7 +190,7 @@ static bool condition_satisfied(bool threshold_status) {
             return (threshold_status == false);
 
         case CONDITION_THRESHOLD_EVENT:
-            return true; // TODO
+            return threshold_event;
     }
     return false;
 }
@@ -210,6 +210,7 @@ static void retrieve_data(short *data, bool *threshold_status) {
         // copy data from processing module
         memcpy(data, processing_data, processing_data_length * sizeof(short));
         *threshold_status = processing_threshold_status;
+        const bool threshold_event = processing_threshold_event;
 
         // unlock data mutex
         if(pthread_mutex_unlock(&processing_data_mutex)) {
@@ -218,7 +219,7 @@ static void retrieve_data(short *data, bool *threshold_status) {
         }
 
         // check if data is ready to be sent
-        data_ready = condition_satisfied(*threshold_status);
+        data_ready = should_transmit(*threshold_status, threshold_event);
     }
 }
 
