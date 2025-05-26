@@ -174,24 +174,51 @@ static int write_single_sample(short distance, bool threshold_status) {
     return 0;
 }
 
-static void retrieve_data(short *data, bool *threshold_status) {
-    // wait for data to become available
-    binarysem_wait(&processing_data_available);
+static bool condition_satisfied(bool threshold_status) {
+    // if there are multiple data points, ignore transmit condition
+    if(processing_data_length > 1)
+        return true;
 
-    // lock data mutex
-    if(pthread_mutex_lock(&processing_data_mutex)) {
-        printf("[CAN-IO] error trying to lock data mutex\n");
-        return;
+    switch(transmit_condition) {
+        case CONDITION_ALWAYS:
+            return true;
+
+        case CONDITION_BELOW_THRESHOLD:
+            return (threshold_status == true);
+
+        case CONDITION_ABOVE_THRESHOLD:
+            return (threshold_status == false);
+
+        case CONDITION_THRESHOLD_EVENT:
+            return true; // TODO
     }
+    return false;
+}
 
-    // copy data from processing module
-    memcpy(data, processing_data, processing_data_length * sizeof(short));
-    *threshold_status = processing_threshold_status;
+static void retrieve_data(short *data, bool *threshold_status) {
+    bool data_ready = false;
+    while(!data_ready) {
+        // wait for data to become available
+        binarysem_wait(&processing_data_available);
 
-    // unlock data mutex
-    if(pthread_mutex_unlock(&processing_data_mutex)) {
-        printf("[CAN-IO] error trying to unlock data mutex\n");
-        return;
+        // lock data mutex
+        if(pthread_mutex_lock(&processing_data_mutex)) {
+            printf("[CAN-IO] error trying to lock data mutex\n");
+            continue;
+        }
+
+        // copy data from processing module
+        memcpy(data, processing_data, processing_data_length * sizeof(short));
+        *threshold_status = processing_threshold_status;
+
+        // unlock data mutex
+        if(pthread_mutex_unlock(&processing_data_mutex)) {
+            printf("[CAN-IO] error trying to unlock data mutex\n");
+            continue;
+        }
+
+        // check if data is ready to be sent
+        data_ready = condition_satisfied(*threshold_status);
     }
 }
 
