@@ -27,7 +27,7 @@ static int sensor_id; // TODO set value
 static int transmit_timing;
 static int transmit_condition;
 
-static sem_t request_data;
+static sem_t request_data_message;
 
 /* ================================================================== */
 /*                              Receiver                              */
@@ -106,9 +106,9 @@ static void handle_message(const struct can_msg_s *msg) {
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
-            // if RTR bit is set, request data
+            // if RTR bit is set, request a data message
             if(msg->cm_hdr.ch_rtr)
-                sem_post(&request_data);
+                sem_post(&request_data_message);
         } break;
     }
 }
@@ -230,8 +230,8 @@ static void *sender_run(void *arg) {
     bool below_threshold;
 
     while(true) {
-        // wait for a request
-        sem_wait(&request_data);
+        // wait for a data message request
+        sem_wait(&request_data_message);
 
         // retrieve data
         retrieve_data(data, &below_threshold);
@@ -243,9 +243,9 @@ static void *sender_run(void *arg) {
             // TODO send multiple messages to transmit all data
         }
 
-        // if timing is continuous, request more data
+        // if timing is continuous, request another data message
         if(transmit_timing == TIMING_CONTINUOUS)
-            sem_post(&request_data);
+            sem_post(&request_data_message);
     }
     return NULL;
 }
@@ -282,9 +282,9 @@ int can_io_start(void) {
     // print bit timing information
     print_bit_timing(can_fd);
 
-    // initialize request data semaphore
-    if(sem_init(&request_data, 0, 0)) {
-        printf("[CAN-IO] error initializing request data semaphore\n");
+    // initialize request data message semaphore
+    if(sem_init(&request_data_message, 0, 0)) {
+        printf("[CAN-IO] error initializing request data message semaphore\n");
         return 1;
     }
 
