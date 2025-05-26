@@ -144,7 +144,7 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
-static int write_sample(void) {
+static int write_single_sample(short distance, bool threshold_status) {
     struct can_msg_s msg;
 
     const int datalen = sizeof(struct distance_sensor_can_sample);
@@ -158,24 +158,12 @@ static int write_sample(void) {
         .ch_tcf = false
     };
 
-    // lock data mutex
-    if(pthread_mutex_lock(&processing_data_mutex)) {
-        printf("[CAN-IO] error trying to lock data mutex\n");
-        return 1;
-    }
-
     // set CAN data
-    struct distance_sensor_can_sample data = {
-        .distance        = processing_data[0],
-        .below_threshold = processing_threshold_status
+    struct distance_sensor_can_sample msg_data = {
+        .distance        = distance,
+        .below_threshold = threshold_status
     };
-    memcpy(msg.cm_data, &data, datalen);
-
-    // unlock data mutex
-    if(pthread_mutex_unlock(&processing_data_mutex)) {
-        printf("[CAN-IO] error trying to unlock data mutex\n");
-        return 1;
-    }
+    memcpy(msg.cm_data, &msg_data, datalen);
 
     // write CAN message
     const int msglen = CAN_MSGLEN(datalen);
@@ -186,19 +174,43 @@ static int write_sample(void) {
     return 0;
 }
 
+static void retrieve_data(short *data, bool *threshold_status) {
+    // wait for data to become available
+    binarysem_wait(&processing_data_available);
+
+    // lock data mutex
+    if(pthread_mutex_lock(&processing_data_mutex)) {
+        printf("[CAN-IO] error trying to lock data mutex\n");
+        return;
+    }
+
+    // copy data from processing module
+    memcpy(data, processing_data, processing_data_length * sizeof(short));
+    *threshold_status = processing_threshold_status;
+
+    // unlock data mutex
+    if(pthread_mutex_unlock(&processing_data_mutex)) {
+        printf("[CAN-IO] error trying to unlock data mutex\n");
+        return;
+    }
+}
+
 static void *sender_run(void *arg) {
     printf("[CAN-IO] sender thread started\n");
+
+    static short data[PROCESSING_DATA_MAX_LENGTH];
+    bool threshold_status;
 
     while(true) {
         // wait for a request
         sem_wait(&request_data);
 
-        // wait for data to become available
-        binarysem_wait(&processing_data_available);
+        // retrieve data
+        retrieve_data(data, &threshold_status);
 
         // send CAN message(s)
         if(processing_data_length == 1) {
-            write_sample();
+            write_single_sample(data[0], threshold_status);
         } else {
             // TODO send multiple messages to transmit all data
         }
