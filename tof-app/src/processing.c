@@ -62,8 +62,10 @@ static int process_matrix(int16_t *matrix, uint8_t *status,
             const int sample = matrix[index];
 
             // check if point is valid
-            if(status[index] != 5 && status[index] != 9)
+            if(status[index] != 5 && status[index] != 9) {
+                matrix[index] = -1;
                 continue;
+            }
 
             *count += 1;
             *sum   += sample;
