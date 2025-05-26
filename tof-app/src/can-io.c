@@ -144,7 +144,7 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
-static int write_single_sample(short distance, bool threshold_status) {
+static int write_single_sample(short distance, bool below_threshold) {
     struct can_msg_s msg;
 
     const int datalen = sizeof(struct distance_sensor_can_sample);
@@ -161,7 +161,7 @@ static int write_single_sample(short distance, bool threshold_status) {
     // set CAN data
     struct distance_sensor_can_sample msg_data = {
         .distance        = distance,
-        .below_threshold = threshold_status
+        .below_threshold = below_threshold
     };
     memcpy(msg.cm_data, &msg_data, datalen);
 
@@ -174,7 +174,7 @@ static int write_single_sample(short distance, bool threshold_status) {
     return 0;
 }
 
-static bool should_transmit(bool threshold_status, bool threshold_event) {
+static bool should_transmit(bool below_threshold, bool threshold_event) {
     // if there are multiple data points, ignore transmit condition
     if(processing_data_length > 1)
         return true;
@@ -184,10 +184,10 @@ static bool should_transmit(bool threshold_status, bool threshold_event) {
             return true;
 
         case CONDITION_BELOW_THRESHOLD:
-            return (threshold_status == true);
+            return below_threshold;
 
         case CONDITION_ABOVE_THRESHOLD:
-            return (threshold_status == false);
+            return !below_threshold;
 
         case CONDITION_THRESHOLD_EVENT:
             return threshold_event;
@@ -195,7 +195,7 @@ static bool should_transmit(bool threshold_status, bool threshold_event) {
     return false;
 }
 
-static void retrieve_data(short *data, bool *threshold_status) {
+static void retrieve_data(short *data, bool *below_threshold) {
     bool data_ready = false;
     while(!data_ready) {
         // wait for data to become available
@@ -209,7 +209,7 @@ static void retrieve_data(short *data, bool *threshold_status) {
 
         // copy data from processing module
         memcpy(data, processing_data, processing_data_length * sizeof(short));
-        *threshold_status = processing_threshold_status;
+        *below_threshold = processing_below_threshold;
         const bool threshold_event = processing_threshold_event;
 
         // unlock data mutex
@@ -219,7 +219,7 @@ static void retrieve_data(short *data, bool *threshold_status) {
         }
 
         // check if data is ready to be sent
-        data_ready = should_transmit(*threshold_status, threshold_event);
+        data_ready = should_transmit(*below_threshold, threshold_event);
     }
 }
 
@@ -227,18 +227,18 @@ static void *sender_run(void *arg) {
     printf("[CAN-IO] sender thread started\n");
 
     static short data[PROCESSING_DATA_MAX_LENGTH];
-    bool threshold_status;
+    bool below_threshold;
 
     while(true) {
         // wait for a request
         sem_wait(&request_data);
 
         // retrieve data
-        retrieve_data(data, &threshold_status);
+        retrieve_data(data, &below_threshold);
 
         // send CAN message(s)
         if(processing_data_length == 1) {
-            write_single_sample(data[0], threshold_status);
+            write_single_sample(data[0], below_threshold);
         } else {
             // TODO send multiple messages to transmit all data
         }

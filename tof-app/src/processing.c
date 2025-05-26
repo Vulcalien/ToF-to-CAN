@@ -23,7 +23,7 @@ binarysem       processing_data_available;
 int             processing_data_length;
 
 short processing_data[PROCESSING_DATA_MAX_LENGTH];
-bool  processing_threshold_status;
+bool  processing_below_threshold;
 bool  processing_threshold_event;
 
 static struct {
@@ -95,11 +95,11 @@ static void update_threshold_status(void) {
     previous = current;
 
     const bool consistent_enough = (consistency >= threshold_delay);
-    const bool status_change = (processing_threshold_status != current);
+    const bool status_change = (processing_below_threshold != current);
 
     // if readings are consistent enough, update status and event flag
     if(consistent_enough && status_change) {
-        processing_threshold_status = current;
+        processing_below_threshold = current;
         processing_threshold_event = true;
     } else {
         processing_threshold_event = false;
