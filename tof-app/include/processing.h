@@ -13,7 +13,8 @@ extern binarysem       processing_data_available;
 extern int             processing_data_length;
 
 extern short processing_data[PROCESSING_DATA_MAX_LENGTH];
-extern bool  processing_threshold_status;
+extern bool  processing_threshold_status; // true = below threshold
+extern bool  processing_threshold_event;  // true = status just changed
 
 extern int processing_init(void);
 extern int processing_start(void);

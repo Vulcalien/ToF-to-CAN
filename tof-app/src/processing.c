@@ -24,6 +24,7 @@ int             processing_data_length;
 
 short processing_data[PROCESSING_DATA_MAX_LENGTH];
 bool  processing_threshold_status;
+bool  processing_threshold_event;
 
 static struct {
     int x0, y0, x1, y1;
@@ -93,9 +94,16 @@ static void update_threshold_status(void) {
         consistency = 0;
     previous = current;
 
-    // if readings are consistent enough, update threshold status
-    if(consistency >= threshold_delay)
+    const bool consistent_enough = (consistency >= threshold_delay);
+    const bool status_change = (processing_threshold_status != current);
+
+    // if readings are consistent enough, update status and event flag
+    if(consistent_enough && status_change) {
         processing_threshold_status = current;
+        processing_threshold_event = true;
+    } else {
+        processing_threshold_event = false;
+    }
 }
 
 static int update_data(void) {
