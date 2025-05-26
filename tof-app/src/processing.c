@@ -118,20 +118,28 @@ static int update_data(void) {
 
     // update data based on result selector
     switch(result_selector) {
-        case SELECTOR_MIN:
+        case SELECTOR_MIN: {
             processing_data[0] = min;
-            break;
+        } break;
 
-        case SELECTOR_MAX:
+        case SELECTOR_MAX: {
             processing_data[0] = max;
-            break;
+        } break;
 
-        case SELECTOR_AVERAGE:
+        case SELECTOR_AVERAGE: {
             processing_data[0] = (sum / count);
-            break;
+        } break;
 
-        case SELECTOR_ALL: // TODO
-            break;
+        case SELECTOR_ALL: {
+            // copy all data points within the configured bounds
+            int i = 0;
+            for(int y = bounds.y0; y <= bounds.y1; y++) {
+                for(int x = bounds.x0; x <= bounds.x1; x++) {
+                    const int index = x + y * tof_matrix_width;
+                    processing_data[i++] = matrix[index];
+                }
+            }
+        } break;
     }
 
     // if there is only one data value, update threshold status
