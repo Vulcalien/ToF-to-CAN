@@ -22,7 +22,7 @@ pthread_mutex_t processing_data_mutex;
 binarysem       processing_data_available;
 int             processing_data_length;
 
-short processing_data[64];
+short processing_data[PROCESSING_DATA_MAX_LENGTH];
 bool  processing_threshold_status;
 
 static struct {
