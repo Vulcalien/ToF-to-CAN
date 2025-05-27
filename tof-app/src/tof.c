@@ -35,6 +35,7 @@ int tof_init(void) {
     printf("[ToF] resetting sensor\n");
     tof_reset();
 
+    // check if sensor is alive
     uint8_t is_alive;
     if(vl53l5cx_is_alive(&config, &is_alive) || !is_alive) {
         printf(
@@ -45,12 +46,18 @@ int tof_init(void) {
     }
     printf("[ToF] sensor detected\n");
 
+    // initialize sensor
     if(vl53l5cx_init(&config)) {
         printf("[ToF] error initializing sensor\n");
         return 1;
     }
     printf("[ToF] initialization complete\n");
 
+    // set sensor's ranging mode to continuous
+    if(vl53l5cx_set_ranging_mode(&config, VL53L5CX_RANGING_MODE_CONTINUOUS)) {
+        printf("[ToF] error setting ranging mode\n");
+        return 1;
+    }
     return 0;
 }
 
@@ -132,24 +139,6 @@ int tof_set_ranging_frequency(int frequency_hz) {
     printf(
         "[ToF] setting ranging frequency to %dHz (err=%d)\n",
         frequency_hz, err
-    );
-    return err;
-}
-
-int tof_set_ranging_mode(int mode) {
-    int err = vl53l5cx_set_ranging_mode(&config, mode);
-
-    const char *setting_name;
-    if(mode == 0)
-        setting_name = "Autonomous";
-    else if(mode == 1)
-        setting_name = "Continuous";
-    else
-        setting_name = "Unknown";
-
-    printf(
-        "[ToF] setting ranging mode to '%s' (err=%d)\n",
-        setting_name, err
     );
     return err;
 }
