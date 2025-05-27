@@ -93,24 +93,20 @@ int tof_set_resolution(int resolution) {
 }
 
 int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
-    int err = 0;
-
     // wait for data to be ready
     uint8_t is_ready = false;
     while(!is_ready) {
-        err = vl53l5cx_check_data_ready(&config, &is_ready);
-        if(err) {
+        if(vl53l5cx_check_data_ready(&config, &is_ready)) {
             printf("[ToF] error in vl53l5cx_check_data_ready\n");
-            return err;
+            return 1;
         }
         usleep(1000); // wait 1ms
     }
 
     // read ranging data
-    err = vl53l5cx_get_ranging_data(&config, &results);
-    if(err) {
+    if(vl53l5cx_get_ranging_data(&config, &results)) {
         printf("[ToF] error in vl53l5cx_get_ranging_data\n");
-        return err;
+        return 1;
     }
 
     #if VL53L5CX_NB_TARGET_PER_ZONE == 1
@@ -131,7 +127,7 @@ int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
         *status_matrix = _status_matrix;
     #endif
 
-    return err;
+    return 0;
 }
 
 int tof_set_ranging_frequency(int frequency_hz) {
