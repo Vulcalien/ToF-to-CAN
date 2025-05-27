@@ -7,8 +7,8 @@ extern int tof_matrix_width; // width = height = sqrt(tof_resolution)
 
 extern int tof_init(void);
 
-extern int tof_start_ranging(void);
-extern int tof_stop_ranging(void);
+extern void tof_start_ranging(void);
+extern void tof_stop_ranging(void);
 
 extern int tof_read_data(int16_t **matrix, uint8_t **status_matrix);
 

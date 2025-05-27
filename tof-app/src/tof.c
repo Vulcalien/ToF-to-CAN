@@ -61,20 +61,28 @@ int tof_init(void) {
     return 0;
 }
 
-int tof_start_ranging(void) {
+void tof_start_ranging(void) {
+    // if already ranging, do nothing
     if(is_ranging)
-        return 0;
-    is_ranging = true;
+        return;
 
-    return vl53l5cx_start_ranging(&config);
+    while(vl53l5cx_start_ranging(&config)) {
+        printf("[ToF] error trying to start ranging, retrying\n");
+        usleep(1000); // wait 1ms
+    }
+    is_ranging = true;
 }
 
-int tof_stop_ranging(void) {
+void tof_stop_ranging(void) {
+    // if already not ranging, do nothing
     if(!is_ranging)
-        return 0;
-    is_ranging = false;
+        return;
 
-    return vl53l5cx_stop_ranging(&config);
+    while(vl53l5cx_stop_ranging(&config)) {
+        printf("[ToF] error trying to stop ranging, retrying\n");
+        usleep(1000); // wait 1ms
+    }
+    is_ranging = false;
 }
 
 int tof_set_resolution(int resolution) {
