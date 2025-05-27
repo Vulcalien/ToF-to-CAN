@@ -48,9 +48,9 @@ struct distance_sensor_can_config {
 
 // transmit_condition:
 // - 0=always
-// - 1=below threshold
-// - 2=above threshold
-// - 3=threshold event
+// - 1=below threshold event
+// - 2=above threshold event
+// - 3=any threshold event
 
 #define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
 struct distance_sensor_can_sample {

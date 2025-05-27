@@ -16,10 +16,10 @@
 #define TIMING_ON_DEMAND  0
 #define TIMING_CONTINUOUS 1
 
-#define CONDITION_ALWAYS          0
-#define CONDITION_BELOW_THRESHOLD 1
-#define CONDITION_ABOVE_THRESHOLD 2
-#define CONDITION_THRESHOLD_EVENT 3
+#define CONDITION_ALWAYS                0
+#define CONDITION_BELOW_THRESHOLD_EVENT 1
+#define CONDITION_ABOVE_THRESHOLD_EVENT 2
+#define CONDITION_ANY_THRESHOLD_EVENT   3
 
 static int can_fd;
 static int sensor_id; // TODO set value
@@ -182,13 +182,13 @@ static bool should_transmit(bool below_threshold, bool threshold_event) {
         case CONDITION_ALWAYS:
             return true;
 
-        case CONDITION_BELOW_THRESHOLD:
-            return below_threshold;
+        case CONDITION_BELOW_THRESHOLD_EVENT:
+            return threshold_event && below_threshold;
 
-        case CONDITION_ABOVE_THRESHOLD:
-            return !below_threshold;
+        case CONDITION_ABOVE_THRESHOLD_EVENT:
+            return threshold_event && !below_threshold;
 
-        case CONDITION_THRESHOLD_EVENT:
+        case CONDITION_ANY_THRESHOLD_EVENT:
             return threshold_event;
     }
     return false;
