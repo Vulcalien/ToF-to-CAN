@@ -9,7 +9,8 @@
 int main(int argc, char *argv[]) {
     while(tof_init())
         printf("[Main] ToF initialization failed: retrying\n");
-    processing_init();
+    while(processing_init())
+        printf("[Main] Processing initialization failed: retrying\n");
 
     can_io_start();
     processing_start();
