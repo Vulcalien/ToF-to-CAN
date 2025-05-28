@@ -35,6 +35,8 @@ static int result_selector;
 static int threshold;
 static int threshold_delay;
 
+static bool is_paused = false;
+
 int processing_init(void) {
     // initialize data mutex
     if(pthread_mutex_init(&processing_data_mutex, NULL)) {
@@ -170,9 +172,11 @@ static void *processing_run(void *arg) {
     printf("[Processing] thread started\n");
 
     while(true) {
-        // try to update data; on success, notify other threads
-        if(update_data() == 0)
-            binarysem_post(&processing_data_available);
+        if(!is_paused) {
+            // try to update data and, on success, mark it as available
+            if(update_data() == 0)
+                binarysem_post(&processing_data_available);
+        }
 
         // wait 1ms
         usleep(1000);
@@ -195,6 +199,17 @@ int processing_start(void) {
     pthread_join(thread, &retval);
 
     return 0;
+}
+
+void processing_pause(void) {
+    is_paused = true;
+    usleep(10000); // wait 10ms to ensure no data is being processed
+    tof_stop_ranging();
+}
+
+void processing_resume(void) {
+    tof_start_ranging();
+    is_paused = false;
 }
 
 int processing_set_mode(int mode) {

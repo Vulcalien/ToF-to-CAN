@@ -19,6 +19,9 @@ extern bool  processing_threshold_event;
 extern int processing_init(void);
 extern int processing_start(void);
 
+extern void processing_pause(void);
+extern void processing_resume(void);
+
 extern int processing_set_mode(int mode);
 extern int processing_set_threshold(int threshold);
 extern int processing_set_threshold_delay(int delay);
