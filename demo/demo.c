@@ -14,7 +14,11 @@
 
 #include <linux/can.h>
 
+#include "distance-sensor.h"
+
 static int sockfd;
+
+#define RTR_BIT (1 << 30)
 
 static int can_open(const char *ifname) {
     if((sockfd = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
@@ -36,7 +40,7 @@ static int can_open(const char *ifname) {
 	}
 }
 
-static int can_write(uint32_t can_id, uint8_t *data, int len) {
+static int can_write(uint32_t can_id, void *data, int len) {
     struct can_frame frame;
 
     frame.can_id  = can_id;
@@ -51,7 +55,7 @@ static int can_write(uint32_t can_id, uint8_t *data, int len) {
     return len;
 }
 
-static int can_read(uint32_t *can_id, uint8_t *data) {
+static int can_read(uint32_t *can_id, void *data) {
     struct can_frame frame;
 
     if(read(sockfd, &frame, sizeof(struct can_frame)) < 0) {
@@ -65,6 +69,58 @@ static int can_read(uint32_t *can_id, uint8_t *data) {
     return len;
 }
 
+static void config_sensor(struct distance_sensor_can_config *config) {
+    const char *area = "?";
+    switch((config->processing_mode >> 6) & 3) {
+        case 0:
+            area = "matrix";
+            break;
+        case 1:
+            area = "column";
+            break;
+        case 2:
+            area = "row";
+            break;
+        case 3:
+            area = "point";
+            break;
+    }
+
+    const char *timing = (
+        config->transmit_timing ? "continuous" : "on-demand"
+    );
+
+    const char *condition = "?";
+    switch(config->transmit_condition) {
+        case 0:
+            condition = "always true";
+            break;
+        case 1:
+            condition = "below threshold event";
+            break;
+        case 2:
+            condition = "above threshold event";
+            break;
+        case 3:
+            condition = "any threshold event";
+            break;
+    }
+
+    printf("[Sender] configuring distance sensor:\n");
+    printf("  resolution: %d\n", config->resolution);
+    printf("  frequency: %d\n", config->ranging_frequency);
+    printf("  processing mode: %b (area=%s)\n", config->processing_mode, area);
+    printf("  threshold: %d\n", config->threshold);
+    printf("  threshold delay: %d\n", config->threshold_delay);
+    printf("  transmit timing: %s\n", timing);
+    printf("  transmit condition: %s\n", condition);
+
+    can_write(
+        DISTANCE_SENSOR_CAN_CONFIG_MASK_ID,
+        config,
+        DISTANCE_SENSOR_CAN_CONFIG_SIZE
+    );
+}
 /* ================================================================== */
 /*                                main                                */
 /* ================================================================== */
