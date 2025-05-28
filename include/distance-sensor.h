@@ -47,7 +47,7 @@ struct distance_sensor_can_config {
 //   +-----+-------------------+---------------------------------+
 
 // transmit_condition:
-// - 0=always
+// - 0=always true
 // - 1=below threshold event
 // - 2=above threshold event
 // - 3=any threshold event

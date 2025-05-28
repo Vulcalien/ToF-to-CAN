@@ -16,7 +16,7 @@
 #define TIMING_ON_DEMAND  0
 #define TIMING_CONTINUOUS 1
 
-#define CONDITION_ALWAYS                0
+#define CONDITION_ALWAYS_TRUE           0
 #define CONDITION_BELOW_THRESHOLD_EVENT 1
 #define CONDITION_ABOVE_THRESHOLD_EVENT 2
 #define CONDITION_ANY_THRESHOLD_EVENT   3
@@ -179,7 +179,7 @@ static bool should_transmit(bool below_threshold, bool threshold_event) {
         return true;
 
     switch(transmit_condition) {
-        case CONDITION_ALWAYS:
+        case CONDITION_ALWAYS_TRUE:
             return true;
 
         case CONDITION_BELOW_THRESHOLD_EVENT:
