@@ -167,7 +167,7 @@ int main(int argc, int *argv[]) {
     if(selected > 0 && selected <= DEMO_COUNT) {
         pthread_t sender_thread, receiver_thread;
 
-        void *arg = &demos[selected];
+        void *arg = &demos[selected - 1];
 
         pthread_create(&sender_thread,   NULL, run_sender,   arg);
         pthread_create(&receiver_thread, NULL, run_receiver, arg);
