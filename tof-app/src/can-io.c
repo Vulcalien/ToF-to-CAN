@@ -88,7 +88,7 @@ static void handle_message(const struct can_msg_s *msg) {
 
             // set ToF settings
             tof_set_resolution(config->resolution);
-            tof_set_ranging_frequency(config->ranging_frequency);
+            tof_set_frequency(config->frequency);
             tof_set_sharpener(config->sharpener);
 
             // set processing settings

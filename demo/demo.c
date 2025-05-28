@@ -108,7 +108,7 @@ static void config_sensor(struct distance_sensor_can_config *config) {
 
     printf("[Sender] configuring distance sensor:\n");
     printf("  resolution: %d\n", config->resolution);
-    printf("  frequency: %d\n", config->ranging_frequency);
+    printf("  frequency: %d\n", config->frequency);
     printf("  processing mode: %b (area=%s)\n", config->processing_mode, area);
     printf("  threshold: %d\n", config->threshold);
     printf("  threshold delay: %d\n", config->threshold_delay);

@@ -4,9 +4,9 @@
 #define DISTANCE_SENSOR_CAN_CONFIG_SIZE 8
 struct distance_sensor_can_config {
     // ToF settings
-    unsigned int resolution        : 8; // 16 or 64
-    unsigned int ranging_frequency : 8; // 1...60Hz
-    unsigned int sharpener         : 8; // 0...99%
+    unsigned int resolution : 8; // 16 or 64
+    unsigned int frequency  : 8; // 1...60Hz
+    unsigned int sharpener  : 8; // 0...99%
 
     // processing settings
     unsigned int processing_mode : 8;  // see below

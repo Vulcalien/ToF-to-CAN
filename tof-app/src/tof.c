@@ -140,10 +140,10 @@ int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
     return 0;
 }
 
-int tof_set_ranging_frequency(int frequency_hz) {
+int tof_set_frequency(int frequency_hz) {
     int err = vl53l5cx_set_ranging_frequency_hz(&config, frequency_hz);
     printf(
-        "[ToF] setting ranging frequency to %dHz (err=%d)\n",
+        "[ToF] setting frequency to %dHz (err=%d)\n",
         frequency_hz, err
     );
     return err;
