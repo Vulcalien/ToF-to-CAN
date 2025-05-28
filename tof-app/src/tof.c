@@ -101,15 +101,17 @@ int tof_set_resolution(int resolution) {
 }
 
 int tof_read_data(int16_t **matrix, uint8_t **status_matrix) {
-    // wait for data to be ready
-    uint8_t is_ready = false;
-    while(!is_ready) {
-        if(vl53l5cx_check_data_ready(&config, &is_ready)) {
-            printf("[ToF] error in vl53l5cx_check_data_ready\n");
-            return 1;
-        }
-        usleep(1000); // wait 1ms
+    uint8_t is_ready;
+
+    // check if data is ready
+    if(vl53l5cx_check_data_ready(&config, &is_ready)) {
+        printf("[ToF] error in vl53l5cx_check_data_ready\n");
+        return 1;
     }
+
+    // if data is not ready, return
+    if(!is_ready)
+        return 1;
 
     // read ranging data
     if(vl53l5cx_get_ranging_data(&config, &results)) {

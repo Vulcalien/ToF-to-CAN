@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <unistd.h>
 #include <pthread.h>
 
 #include "binarysem.h"
@@ -109,7 +110,10 @@ static void update_threshold_status(void) {
 static int update_data(void) {
     int16_t *matrix;
     uint8_t *status;
-    tof_read_data(&matrix, &status);
+
+    // read ToF data, if available
+    if(tof_read_data(&matrix, &status))
+        return 1;
 
     // process the matrix to gather data about its elements
     int count, sum, min, max;
@@ -166,11 +170,12 @@ static void *processing_run(void *arg) {
     printf("[Processing] thread started\n");
 
     while(true) {
-        while(update_data())
-            printf("[Processing] sampling failed, retrying\n");
+        // try to update data; on success, notify other threads
+        if(update_data() == 0)
+            binarysem_post(&processing_data_available);
 
-        // notify other threads that data is available
-        binarysem_post(&processing_data_available);
+        // wait 1ms
+        usleep(1000);
     }
     return NULL;
 }
