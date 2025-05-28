@@ -109,7 +109,7 @@ static void config_sensor(struct distance_sensor_can_config *config) {
     printf("[Sender] configuring distance sensor:\n");
     printf("  resolution: %d\n", config->resolution);
     printf("  frequency: %d\n", config->frequency);
-    printf("  processing mode: %b (area=%s)\n", config->processing_mode, area);
+    printf("  processing mode: %b (area = %s)\n", config->processing_mode, area);
     printf("  threshold: %d\n", config->threshold);
     printf("  threshold delay: %d\n", config->threshold_delay);
     printf("  transmit timing: %s\n", timing);
@@ -121,6 +121,59 @@ static void config_sensor(struct distance_sensor_can_config *config) {
         DISTANCE_SENSOR_CAN_CONFIG_SIZE
     );
 }
+
+/* ================================================================== */
+/*                    demo: default configuration                     */
+/* ================================================================== */
+
+void demo_default_config_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 16,
+        .frequency  = 1,
+        .sharpener  = 5,
+
+        .processing_mode = 0, // min in matrix
+        .threshold       = 200,
+        .threshold_delay = 2,
+
+        .transmit_timing    = 0, // on-demand
+        .transmit_condition = 0, // always true
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        printf("[Sender] requesting sample\n");
+
+        uint32_t can_id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID;
+        uint8_t data[8];
+        can_write(can_id | RTR_BIT, data, 0);
+    }
+}
+
+void demo_default_config_receiver(void) {
+    while(1) {
+        uint32_t can_id;
+        uint8_t data[8];
+        can_read(&can_id, &data);
+
+        if(can_id & RTR_BIT)
+            continue;
+
+        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
+        const int msg_type  = can_id - sensor_id;
+
+        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID) {
+            struct distance_sensor_can_sample sample_data;
+            memcpy(&sample_data, data, sizeof(sample_data));
+
+            printf("[Receiver] received sample from ID=%d:\n", sensor_id);
+            printf("  distance: %d\n", sample_data.distance);
+            printf("  below threshold: %d\n", sample_data.below_threshold);
+        }
+    }
+}
+
 /* ================================================================== */
 /*                                main                                */
 /* ================================================================== */
@@ -147,7 +200,11 @@ static void *run_receiver(void *arg) {
 
 #define DEMO_COUNT (sizeof(demos) / sizeof(struct Demo))
 static struct Demo demos[] = {
-    // TODO ...
+    {
+        "default configuration",
+        demo_default_config_sender,
+        demo_default_config_receiver
+    },
 };
 
 int main(int argc, int *argv[]) {
@@ -163,6 +220,7 @@ int main(int argc, int *argv[]) {
 
     int selected;
     scanf("%d", &selected);
+    getchar(); // consume the newline character
 
     if(selected > 0 && selected <= DEMO_COUNT) {
         pthread_t sender_thread, receiver_thread;
