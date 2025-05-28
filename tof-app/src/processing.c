@@ -8,6 +8,7 @@
 #include "binarysem.h"
 
 #include "tof.h"
+#include "debug.h"
 
 #define AREA_MATRIX 0
 #define AREA_COLUMN 1
@@ -50,6 +51,30 @@ int processing_init(void) {
         return 1;
     }
     return 0;
+}
+
+static void dump_data(int16_t *matrix) {
+    printf("=== DATA DUMP ===\n");
+
+    printf("ToF Matrix:\n");
+    for(int y = bounds.y0; y <= bounds.y1; y++) {
+        for(int x = bounds.x0; x <= bounds.x1; x++) {
+            const int index = x + y * tof_matrix_width;
+            printf("%d, ", matrix[index]);
+        }
+        printf("\n");
+    }
+
+    printf("Distance data:");
+    for(int i = 0; i < processing_data_length; i++)
+        printf("%d, ", processing_data[i]);
+    printf("\n");
+
+    if(processing_data_length == 1) {
+        printf("Below threshold: %d\n", processing_below_threshold);
+        printf("Threshold event: %d\n", processing_threshold_event);
+    }
+    printf("\n");
 }
 
 static int process_matrix(int16_t *matrix, uint8_t *status,
@@ -165,6 +190,11 @@ static int update_data(void) {
         printf("[Processing] error trying to unlock data mutex\n");
         return 1;
     }
+
+    // dump ToF matrix and processed data
+    if(debug_should_dump)
+        dump_data(matrix);
+
     return 0;
 }
 
