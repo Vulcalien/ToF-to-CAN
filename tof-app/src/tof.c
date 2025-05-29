@@ -14,7 +14,6 @@ static bool is_ranging = false;
 
 extern void set_i2c_rst(bool on);
 extern void set_LPn(bool on);
-extern void board_userled(int led, bool ledon);
 
 static inline void tof_reset(void) {
     set_LPn(0);
