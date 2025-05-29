@@ -10,8 +10,10 @@ all: run
 run: build
 	./$(OUT)
 
-build:
-	gcc $(CPPFLAGS) $(CFLAGS) demo.c -o $(OUT)
+build: $(OUT)
 
 clean:
-	rm $(OUT)
+	rm -fv $(OUT)
+
+$(OUT): demo.c
+	gcc $(CPPFLAGS) $(CFLAGS) demo.c -o $(OUT)
