@@ -71,19 +71,48 @@ static int can_read(uint32_t *can_id, void *data) {
 }
 
 static void config_sensor(struct distance_sensor_can_config *config) {
-    const char *area = "?";
-    switch((config->processing_mode >> 6) & 3) {
+    const char *result_selector = "?";
+    switch((config->processing_mode >> 4) & 3) {
         case 0:
-            area = "matrix";
+            result_selector = "min";
             break;
         case 1:
-            area = "column";
+            result_selector = "max";
             break;
         case 2:
-            area = "row";
+            result_selector = "average";
             break;
         case 3:
-            area = "point";
+            result_selector = "all points";
+            break;
+    }
+
+    char mode_str[256] = { 0 };
+    switch((config->processing_mode >> 6) & 3) {
+        case 0:
+            snprintf(mode_str, 256, "%s in matrix", result_selector);
+            break;
+        case 1:
+            snprintf(
+                mode_str, 256,
+                "%s in column n. %d",
+                result_selector, config->processing_mode & 7
+            );
+            break;
+        case 2:
+            snprintf(
+                mode_str, 256,
+                "%s in row n. %d",
+                result_selector, config->processing_mode & 7
+            );
+            break;
+        case 3:
+            snprintf(
+                mode_str, 256,
+                "point at x=%d, y=%d",
+                config->processing_mode & 7,
+                (config->processing_mode >> 3) & 7
+            );
             break;
     }
 
@@ -110,7 +139,7 @@ static void config_sensor(struct distance_sensor_can_config *config) {
     printf("[Sender] configuring distance sensor:\n");
     printf("  resolution: %d\n", config->resolution);
     printf("  frequency: %d\n", config->frequency);
-    printf("  processing mode: %b (area = %s)\n", config->processing_mode, area);
+    printf("  processing mode: %s\n", mode_str);
     printf("  threshold: %d\n", config->threshold);
     printf("  threshold delay: %d\n", config->threshold_delay);
     printf("  transmit timing: %s\n", timing);
@@ -121,6 +150,14 @@ static void config_sensor(struct distance_sensor_can_config *config) {
         config,
         DISTANCE_SENSOR_CAN_CONFIG_SIZE
     );
+}
+
+static void request_sample(void) {
+    printf("[Sender] requesting sample\n");
+
+    uint32_t can_id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID;
+    uint8_t data[8];
+    can_write(can_id | RTR_BIT, data, 0);
 }
 
 static void print_received_distance(int sensor_id, uint8_t *data) {
@@ -153,11 +190,7 @@ static void demo_default_config_sender(void) {
 
     while(1) {
         getchar();
-        printf("[Sender] requesting sample\n");
-
-        uint32_t can_id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID;
-        uint8_t data[8];
-        can_write(can_id | RTR_BIT, data, 0);
+        request_sample();
     }
 }
 
@@ -199,15 +232,53 @@ static void demo_higher_frequency_sender(void) {
 
     while(1) {
         getchar();
-        printf("[Sender] requesting sample\n");
-
-        uint32_t can_id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID;
-        uint8_t data[8];
-        can_write(can_id | RTR_BIT, data, 0);
+        request_sample();
     }
 }
 
 static void demo_higher_frequency_receiver(void) {
+    while(1) {
+        uint32_t can_id;
+        uint8_t data[8];
+        can_read(&can_id, &data);
+
+        if(can_id & RTR_BIT)
+            continue;
+
+        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
+        const int msg_type  = can_id - sensor_id;
+
+        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID)
+            print_received_distance(sensor_id, data);
+    }
+}
+
+/* ================================================================== */
+/*                    demo: below threshold event                     */
+/* ================================================================== */
+
+static void demo_below_threshold_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 16,
+        .frequency  = 60,
+        .sharpener  = 5,
+
+        .processing_mode = 0, // min in matrix
+        .threshold       = 200,
+        .threshold_delay = 2,
+
+        .transmit_timing    = 0, // on-demand
+        .transmit_condition = 1, // below threshold event
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+static void demo_below_threshold_receiver(void) {
     while(1) {
         uint32_t can_id;
         uint8_t data[8];
@@ -258,6 +329,10 @@ static struct Demo demos[] = {
         "higher frequency (consecutive requests are handled quickly)",
         demo_higher_frequency_sender,
         demo_higher_frequency_receiver
+    }, {
+        "wait for below threshold event",
+        demo_below_threshold_sender,
+        demo_below_threshold_receiver
     }
 };
 
