@@ -38,6 +38,7 @@ static int can_open(const char *ifname) {
 		perror("Bind");
 		return 1;
 	}
+    return 0;
 }
 
 static int can_write(uint32_t can_id, void *data, int len) {
@@ -260,7 +261,7 @@ static struct Demo demos[] = {
     }
 };
 
-int main(int argc, int *argv[]) {
+int main(int argc, char *argv[]) {
     if(can_open("can0")) {
         printf("Error trying to open CAN device\n");
         return 1;
