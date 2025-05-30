@@ -160,13 +160,27 @@ static void request_sample(void) {
     can_write(can_id | RTR_BIT, data, 0);
 }
 
-static void print_received_distance(int sensor_id, uint8_t *data) {
-    struct distance_sensor_can_sample sample_data;
-    memcpy(&sample_data, data, sizeof(sample_data));
+static void distance_receiver(void) {
+    while(1) {
+        uint32_t can_id;
+        uint8_t data[8];
+        can_read(&can_id, &data);
 
-    printf("[Receiver] received sample (sensor ID=%d):\n", sensor_id);
-    printf("  distance: %d\n", sample_data.distance);
-    printf("  below threshold: %d\n", sample_data.below_threshold);
+        if(can_id & RTR_BIT)
+            continue;
+
+        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
+        const int msg_type  = can_id - sensor_id;
+
+        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID) {
+            struct distance_sensor_can_sample sample_data;
+            memcpy(&sample_data, data, sizeof(sample_data));
+
+            printf("[Receiver] received sample (sensor ID=%d):\n", sensor_id);
+            printf("  distance: %d\n", sample_data.distance);
+            printf("  below threshold: %d\n", sample_data.below_threshold);
+        }
+    }
 }
 
 /* ================================================================== */
@@ -191,23 +205,6 @@ static void demo_default_config_sender(void) {
     while(1) {
         getchar();
         request_sample();
-    }
-}
-
-static void demo_default_config_receiver(void) {
-    while(1) {
-        uint32_t can_id;
-        uint8_t data[8];
-        can_read(&can_id, &data);
-
-        if(can_id & RTR_BIT)
-            continue;
-
-        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
-        const int msg_type  = can_id - sensor_id;
-
-        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID)
-            print_received_distance(sensor_id, data);
     }
 }
 
@@ -236,23 +233,6 @@ static void demo_higher_frequency_sender(void) {
     }
 }
 
-static void demo_higher_frequency_receiver(void) {
-    while(1) {
-        uint32_t can_id;
-        uint8_t data[8];
-        can_read(&can_id, &data);
-
-        if(can_id & RTR_BIT)
-            continue;
-
-        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
-        const int msg_type  = can_id - sensor_id;
-
-        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID)
-            print_received_distance(sensor_id, data);
-    }
-}
-
 /* ================================================================== */
 /*                    demo: below threshold event                     */
 /* ================================================================== */
@@ -275,23 +255,6 @@ static void demo_below_threshold_sender(void) {
     while(1) {
         getchar();
         request_sample();
-    }
-}
-
-static void demo_below_threshold_receiver(void) {
-    while(1) {
-        uint32_t can_id;
-        uint8_t data[8];
-        can_read(&can_id, &data);
-
-        if(can_id & RTR_BIT)
-            continue;
-
-        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
-        const int msg_type  = can_id - sensor_id;
-
-        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID)
-            print_received_distance(sensor_id, data);
     }
 }
 
@@ -324,15 +287,15 @@ static struct Demo demos[] = {
     {
         "default configuration",
         demo_default_config_sender,
-        demo_default_config_receiver
+        distance_receiver
     }, {
         "higher frequency (consecutive requests are handled quickly)",
         demo_higher_frequency_sender,
-        demo_higher_frequency_receiver
+        distance_receiver
     }, {
         "wait for below threshold event",
         demo_below_threshold_sender,
-        demo_below_threshold_receiver
+        distance_receiver
     }
 };
 
