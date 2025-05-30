@@ -17,14 +17,16 @@ distclean: submodules/apps/tof-app
 program: all
 	openocd \
         -f interface/stlink-v2-1.cfg \
-        -f target/stm32l4x.cfg \
-	-c "program submodules/nuttx/nuttx verify reset exit"
+        -f target/stm32l4x.cfg       \
+        -c "adapter speed 50"        \
+        -c "program submodules/nuttx/nuttx verify reset exit"
 
 reset:
 	openocd \
         -f interface/stlink-v2-1.cfg \
-        -f target/stm32l4x.cfg \
-	 -c init -c reset -c exit
+        -f target/stm32l4x.cfg       \
+        -c "adapter speed 50"        \
+        -c init -c reset -c exit
 
 xprogram: all
 	scp submodules/nuttx/nuttx pi@$(RASPI):~/temp
