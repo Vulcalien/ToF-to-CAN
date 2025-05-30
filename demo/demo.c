@@ -259,6 +259,56 @@ static void demo_below_threshold_sender(void) {
 }
 
 /* ================================================================== */
+/*                   demo: continuous transmission                    */
+/* ================================================================== */
+
+static void demo_continuous_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 16,
+        .frequency  = 1,
+        .sharpener  = 5,
+
+        .processing_mode = 0, // min in matrix
+        .threshold       = 200,
+        .threshold_delay = 2,
+
+        .transmit_timing    = 1, // continuous
+        .transmit_condition = 0, // always true
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+/* ================================================================== */
+/*         demo: continuous transmission, any threshold event         */
+/* ================================================================== */
+
+static void demo_continuous_threshold_event_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 16,
+        .frequency  = 60,
+        .sharpener  = 5,
+
+        .processing_mode = 0, // min in matrix
+        .threshold       = 200,
+        .threshold_delay = 2,
+
+        .transmit_timing    = 1, // continuous
+        .transmit_condition = 3, // any threshold event
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+/* ================================================================== */
 /*                                main                                */
 /* ================================================================== */
 
@@ -295,6 +345,14 @@ static struct Demo demos[] = {
     }, {
         "wait for below threshold event",
         demo_below_threshold_sender,
+        distance_receiver
+    }, {
+        "continuous transmission",
+        demo_continuous_sender,
+        distance_receiver
+    }, {
+        "continuous transmission, but wait for any threshold event",
+        demo_continuous_threshold_event_sender,
         distance_receiver
     }
 };
