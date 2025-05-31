@@ -1,11 +1,12 @@
 .PHONY: all clean distclean program reset qconfig
-EXTRA_CLEAN_FILES = romfs.h romfs.img
 
-all: submodules/nuttx/.config submodules/apps/tof-app romfs.h
+ROMFS := config/include/romfs.h
+
+all: submodules/nuttx/.config submodules/apps/tof-app $(ROMFS)
 	cd submodules/nuttx && $(MAKE) all && arm-none-eabi-size nuttx
 
 clean: submodules/apps/tof-app
-	rm -f $(EXTRA_CLEAN_FILES)
+	-rm $(ROMFS)
 	cd submodules/nuttx && $(MAKE) clean
 
 distclean: submodules/apps/tof-app
@@ -45,8 +46,7 @@ submodules/apps/tof-app:
 submodules/nuttx/.config: submodules/apps/tof-app
 	cd submodules/nuttx/tools && ./configure.sh ../../config/tof-l431-nsh
 
-romfs.img: $(shell find etc)
+$(ROMFS): etc/init.d/rcS
 	genromfs -f romfs.img -d etc -V 'ROMFS /etc'
-
-romfs.h: romfs.img
-	xxd -i romfs.img romfs.h && cp romfs.h config/include
+	xxd -i romfs.img $@
+	-rm romfs.img

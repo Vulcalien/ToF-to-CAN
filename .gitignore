@@ -1,17 +1,13 @@
-# build files in 'apps' and 'config'
+# build files in 'config'
 /config/**/*.o
 /config/**/*.a
 /config/**/.built
 /config/**/.depend
 /config/**/Make.dep
+/config/include/romfs.h
 
 # build files in 'tof-app'
 /tof-app/**/*.o
 /tof-app/**/.built
 /tof-app/**/.depend
 /tof-app/**/Make.dep
-
-# generated romfs
-/romfs.h
-/romfs.img
-/config/include/romfs.h
