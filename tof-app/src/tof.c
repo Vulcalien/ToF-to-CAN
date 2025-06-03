@@ -40,6 +40,8 @@ int tof_init(void) {
     config.platform.address = VL53L5CX_DEFAULT_I2C_ADDRESS;
 
     printf("[ToF] resetting sensor\n");
+    board_userled(BOARD_RED_LED,   true);
+    board_userled(BOARD_GREEN_LED, true);
     tof_reset();
 
     // check if sensor is alive
@@ -75,6 +77,9 @@ int tof_init(void) {
 
     tof_resolution   = resolution;
     tof_matrix_width = get_resolution_sqrt();
+
+    board_userled(BOARD_RED_LED,   false);
+    board_userled(BOARD_GREEN_LED, false);
     return 0;
 }
 
