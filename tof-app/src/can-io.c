@@ -42,8 +42,9 @@ static inline int set_transmit_timing(int timing) {
     else
         err = 1;
 
-    // TODO if switching to continuous mode, send a data request to
-    // unlock the semaphore wait.
+    // if timing is continuous, request a data message
+    if(transmit_timing == TIMING_CONTINUOUS)
+        sem_post(&request_data_message);
 
     printf(
         "[CAN-IO] setting transmit timing to %d (err=%d)\n",
