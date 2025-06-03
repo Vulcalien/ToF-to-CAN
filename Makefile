@@ -1,9 +1,12 @@
-.PHONY: all clean distclean program reset qconfig
+.PHONY: all demo clean distclean program reset qconfig
 
 ROMFS := config/include/romfs.h
 
 all: submodules/nuttx/.config submodules/apps/tof-app $(ROMFS)
 	cd submodules/nuttx && $(MAKE) all && arm-none-eabi-size nuttx
+
+demo:
+	$(MAKE) -C demo
 
 clean: submodules/apps/tof-app
 	-rm $(ROMFS)
