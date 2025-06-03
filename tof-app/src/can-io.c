@@ -81,6 +81,8 @@ static void handle_message(const struct can_msg_s *msg) {
 
     switch(msg_type) {
         case DISTANCE_SENSOR_CAN_CONFIG_MASK_ID: {
+            printf("\n=== Configuring ===\n");
+
             // pause data processing
             processing_pause();
 
@@ -103,6 +105,8 @@ static void handle_message(const struct can_msg_s *msg) {
 
             // resume data processing
             processing_resume();
+
+            printf("\n"); // write blank line as separator
         } break;
 
         case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
