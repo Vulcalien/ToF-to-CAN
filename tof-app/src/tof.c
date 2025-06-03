@@ -5,8 +5,8 @@
 
 #include "vl53l5cx_api.h"
 
-int tof_resolution   = 16; // default value
-int tof_matrix_width = 4;  // default value
+int tof_matrix_width;
+static int tof_resolution;
 
 static VL53L5CX_Configuration config;
 static VL53L5CX_ResultsData results;
@@ -26,6 +26,14 @@ static inline void tof_reset(void) {
     usleep(2000);
     set_i2c_rst(0);
     usleep(10000);
+}
+
+static inline int get_resolution_sqrt(void) {
+    switch(tof_resolution) {
+        case VL53L5CX_RESOLUTION_4X4: return 4;
+        case VL53L5CX_RESOLUTION_8X8: return 8;
+    }
+    return -1;
 }
 
 int tof_init(void) {
@@ -57,6 +65,16 @@ int tof_init(void) {
         printf("[ToF] error setting ranging mode\n");
         return 1;
     }
+
+    // get default resolution
+    uint8_t resolution;
+    if(vl53l5cx_get_resolution(&config, &resolution)) {
+        printf("[ToF] error getting default resolution\n");
+        return 1;
+    }
+
+    tof_resolution   = resolution;
+    tof_matrix_width = get_resolution_sqrt();
     return 0;
 }
 
@@ -85,11 +103,8 @@ void tof_stop_ranging(void) {
 }
 
 int tof_set_resolution(int resolution) {
-    tof_resolution = resolution;
-    if(resolution == VL53L5CX_RESOLUTION_4X4)
-        tof_matrix_width = 4;
-    else if(resolution == VL53L5CX_RESOLUTION_8X8)
-        tof_matrix_width = 8;
+    tof_resolution   = resolution;
+    tof_matrix_width = get_resolution_sqrt();
 
     int err = vl53l5cx_set_resolution(&config, resolution);
     printf(

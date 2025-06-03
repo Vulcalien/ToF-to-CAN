@@ -2,8 +2,7 @@
 
 #include "main.h"
 
-extern int tof_resolution;
-extern int tof_matrix_width; // width = height = sqrt(tof_resolution)
+extern int tof_matrix_width; // width = height = sqrt(resolution)
 
 extern int tof_init(void);
 
