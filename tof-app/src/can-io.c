@@ -81,6 +81,16 @@ static void handle_message(const struct can_msg_s *msg) {
 
     switch(msg_type) {
         case DISTANCE_SENSOR_CAN_CONFIG_MASK_ID: {
+            // check if message size is correct
+            if(msg->cm_hdr.ch_dlc != DISTANCE_SENSOR_CAN_CONFIG_SIZE) {
+                printf(
+                    "[CAN-IO] malformed config message "
+                    "(size=%d, expected=%d)\n",
+                    msg->cm_hdr.ch_dlc, DISTANCE_SENSOR_CAN_CONFIG_SIZE
+                );
+                break;
+            }
+
             printf("\n=== Configuring ===\n");
 
             // pause data processing
