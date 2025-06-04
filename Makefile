@@ -9,14 +9,13 @@ demo:
 	$(MAKE) -C demo
 
 clean: submodules/apps/tof-app
+	$(MAKE) -C submodules/nuttx clean
 	-rm $(ROMFS)
-	cd submodules/nuttx && $(MAKE) clean
 
 distclean: submodules/apps/tof-app
-	rm -f $(EXTRA_CLEAN_FILES)
-	cd submodules/nuttx && $(MAKE) distclean
+	$(MAKE) -C submodules/nuttx distclean
 	cd config/tof-l431-nsh && cp -f defconfig.src defconfig
-	-rm submodules/apps/tof-app
+	-rm submodules/apps/tof-app $(ROMFS)
 
 program: all
 	openocd \
@@ -40,7 +39,7 @@ xreset:
 	ssh pi@$(RASPI) 'sudo openocd -f board/st_nucleo_l4.cfg -c init -c reset -c exit'
 
 qconfig: submodules/nuttx/.config
-	cd submodules/nuttx && $(MAKE) qconfig
+	$(MAKE) -C submodules/nuttx qconfig
 	cp -v submodules/nuttx/.config config/tof-l431-nsh/defconfig
 
 submodules/apps/tof-app:
