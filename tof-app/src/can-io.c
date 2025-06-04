@@ -183,7 +183,56 @@ static int write_single_sample(int16_t distance, bool below_threshold) {
     const int msglen = CAN_MSGLEN(datalen);
     const int nbytes = write(can_fd, &msg, msglen);
     if(nbytes != msglen) {
-        // TODO handle error
+        printf("[CAN-IO] error writing to CAN device\n");
+        return 1;
+    }
+    return 0;
+}
+
+static int write_data_packets(int16_t *data, int length) {
+    static int stream_id = 0;
+    stream_id++;
+
+    struct can_msg_s msg;
+
+    const int datalen = sizeof(struct distance_sensor_can_data_packet);
+    const int id = DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID | sensor_id;
+
+    // set CAN header
+    msg.cm_hdr = (struct can_hdr_s) {
+        .ch_id  = id,
+        .ch_dlc = datalen,
+        .ch_rtr = false,
+        .ch_tcf = false
+    };
+
+    const int packet_count = (length + 2) / 3;
+    for(int i = 0; i < packet_count; i++) {
+        struct distance_sensor_can_data_packet packet = {
+            .sequence_number  = i,
+            .last_of_sequence = (i == packet_count - 1),
+            .stream_id        = stream_id
+        };
+
+        // set packet sample data
+        for(int s = 0; s < 3; s++) {
+            const int sample_index = i * 3 + s;
+            if(sample_index < length)
+                packet.data[s] = data[sample_index];
+            else
+                packet.data[s] = -1;
+        }
+
+        // set CAN data
+        memcpy(msg.cm_data, &packet, datalen);
+
+        // write CAN message
+        const int msglen = CAN_MSGLEN(datalen);
+        const int nbytes = write(can_fd, &msg, msglen);
+        if(nbytes != msglen) {
+            printf("[CAN-IO] error writing to CAN device\n");
+            return 1;
+        }
     }
     return 0;
 }
@@ -251,11 +300,10 @@ static void *sender_run(void *arg) {
         retrieve_data(data, &below_threshold);
 
         // send CAN message(s)
-        if(processing_data_length == 1) {
+        if(processing_data_length == 1)
             write_single_sample(data[0], below_threshold);
-        } else {
-            // TODO send multiple messages to transmit all data
-        }
+        else
+            write_data_packets(data, processing_data_length);
 
         // if timing is continuous, request another data message
         if(transmit_timing == TIMING_CONTINUOUS)
