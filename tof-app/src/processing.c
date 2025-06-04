@@ -36,7 +36,7 @@ static int result_selector;
 static int threshold;
 static int threshold_delay;
 
-static bool is_paused = false;
+static bool is_paused = true; // after startup, processing stay paused
 
 int processing_init(void) {
     // initialize data mutex
@@ -219,9 +219,6 @@ static void *processing_run(void *arg) {
 }
 
 int processing_start(void) {
-    // set default processing mode
-    processing_set_mode(0);
-
     pthread_t thread;
     if(pthread_create(&thread, NULL, processing_run, NULL)) {
         printf("[Processing] error creating thread\n");
@@ -236,12 +233,18 @@ int processing_start(void) {
 }
 
 void processing_pause(void) {
+    if(is_paused)
+        return;
+
     is_paused = true;
     usleep(10000); // wait 10ms to ensure no data is being processed
     tof_stop_ranging();
 }
 
 void processing_resume(void) {
+    if(!is_paused)
+        return;
+
     tof_start_ranging();
     is_paused = false;
 }
