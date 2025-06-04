@@ -24,9 +24,9 @@ pthread_mutex_t processing_data_mutex;
 binarysem       processing_data_available;
 int             processing_data_length;
 
-short processing_data[PROCESSING_DATA_MAX_LENGTH];
-bool  processing_below_threshold;
-bool  processing_threshold_event;
+int16_t processing_data[PROCESSING_DATA_MAX_LENGTH];
+bool    processing_below_threshold;
+bool    processing_threshold_event;
 
 static struct {
     int x0, y0, x1, y1;

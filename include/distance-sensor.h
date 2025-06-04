@@ -1,21 +1,24 @@
 #ifndef DISTANCE_SENSOR_CAN_INTERFACE
 #define DISTANCE_SENSOR_CAN_INTERFACE
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #define DISTANCE_SENSOR_CAN_CONFIG_SIZE 8
 struct distance_sensor_can_config {
     // ToF settings
-    unsigned int resolution : 8; // 16 or 64
-    unsigned int frequency  : 8; // 1...60Hz
-    unsigned int sharpener  : 8; // 0...99%
+    uint8_t resolution; // 16 or 64
+    uint8_t frequency;  // 1...60Hz
+    uint8_t sharpener;  // 0...99%
 
     // processing settings
-    unsigned int processing_mode : 8;  // see below
-    unsigned int threshold       : 16; // 0...4000mm
-    unsigned int threshold_delay : 8;  // 0...255
+    uint8_t  processing_mode; // see below
+    uint16_t threshold;       // 0...4000mm
+    uint8_t  threshold_delay; // 0...255
 
     // data transmission
-    unsigned int transmit_timing    : 1; // 0=on-demand, 1=continuous
-    unsigned int transmit_condition : 2; // see below
+    uint8_t transmit_timing    : 1; // 0=on-demand, 1=continuous
+    uint8_t transmit_condition : 2; // see below
 };
 
 // processing_mode:
@@ -54,7 +57,7 @@ struct distance_sensor_can_config {
 
 #define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
 struct distance_sensor_can_sample {
-    short distance;
+    int16_t distance;
     bool below_threshold;
 
     char _padding[1];

@@ -158,7 +158,7 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
-static int write_single_sample(short distance, bool below_threshold) {
+static int write_single_sample(int16_t distance, bool below_threshold) {
     struct can_msg_s msg;
 
     const int datalen = sizeof(struct distance_sensor_can_sample);
@@ -209,7 +209,7 @@ static bool should_transmit(bool below_threshold, bool threshold_event) {
     return false;
 }
 
-static void retrieve_data(short *data, bool *below_threshold) {
+static void retrieve_data(int16_t *data, bool *below_threshold) {
     bool data_ready = false;
     while(!data_ready) {
         // wait for data to become available
@@ -222,7 +222,7 @@ static void retrieve_data(short *data, bool *below_threshold) {
         }
 
         // copy data from processing module
-        memcpy(data, processing_data, processing_data_length * sizeof(short));
+        memcpy(data, processing_data, processing_data_length * sizeof(int16_t));
         *below_threshold = processing_below_threshold;
         const bool threshold_event = processing_threshold_event;
 
@@ -240,7 +240,7 @@ static void retrieve_data(short *data, bool *below_threshold) {
 static void *sender_run(void *arg) {
     printf("[CAN-IO] sender thread started\n");
 
-    static short data[PROCESSING_DATA_MAX_LENGTH];
+    static int16_t data[PROCESSING_DATA_MAX_LENGTH];
     bool below_threshold;
 
     while(true) {
