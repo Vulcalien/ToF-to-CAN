@@ -63,10 +63,20 @@ struct distance_sensor_can_sample {
     char _padding[1];
 };
 
+#define DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE 8
+struct distance_sensor_can_data_packet {
+    uint16_t sequence_number  : 11;
+    uint16_t last_of_sequence : 1;
+    uint16_t stream_id        : 4;
+
+    int16_t data[3];
+};
+
 // number of distinct sensor IDs (ID=0 is broadcast)
 #define DISTANCE_SENSOR_MAX_COUNT 32
 
-#define DISTANCE_SENSOR_CAN_CONFIG_MASK_ID 0x6c0 // 0x6c0...0x6df
-#define DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID 0x6e0 // 0x6e0...0x6ff
+#define DISTANCE_SENSOR_CAN_CONFIG_MASK_ID      0x6c0 // 0x6c0...0x6df
+#define DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID      0x6e0 // 0x6e0...0x6ff
+#define DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID 0x700 // 0x700...0x71f
 
 #endif // DISTANCE_SENSOR_CAN_INTERFACE

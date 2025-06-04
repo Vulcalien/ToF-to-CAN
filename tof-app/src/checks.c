@@ -13,3 +13,8 @@ _Static_assert(
     sizeof(struct distance_sensor_can_sample) == DISTANCE_SENSOR_CAN_SAMPLE_SIZE,
     "size of struct distance_sensor_can_sample is incorrect"
 );
+
+_Static_assert(
+    sizeof(struct distance_sensor_can_data_packet) == DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE,
+    "size of struct distance_sensor_can_data_packet is incorrect"
+);
