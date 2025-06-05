@@ -65,9 +65,11 @@ struct distance_sensor_can_sample {
 
 #define DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE 8
 struct distance_sensor_can_data_packet {
-    uint16_t sequence_number  : 11;
-    uint16_t last_of_sequence : 1;
-    uint16_t stream_id        : 4;
+    uint8_t sequence_number;
+
+    uint8_t data_length     : 2;
+    uint8_t stream_id       : 5;
+    uint8_t last_of_stream  : 1;
 
     int16_t data[3];
 };

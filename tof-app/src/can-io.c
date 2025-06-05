@@ -209,18 +209,20 @@ static int write_data_packets(int16_t *data, int length) {
     const int packet_count = (length + 2) / 3;
     for(int i = 0; i < packet_count; i++) {
         struct distance_sensor_can_data_packet packet = {
-            .sequence_number  = i,
-            .last_of_sequence = (i == packet_count - 1),
-            .stream_id        = stream_id
+            .sequence_number = i,
+            .stream_id       = stream_id,
+            .last_of_stream  = (i == packet_count - 1),
         };
 
         // set packet sample data
+        packet.data_length = 0;
         for(int s = 0; s < 3; s++) {
             const int sample_index = i * 3 + s;
-            if(sample_index < length)
-                packet.data[s] = data[sample_index];
-            else
-                packet.data[s] = -1;
+            if(sample_index >= length)
+                break;
+
+            packet.data[s] = data[sample_index];
+            packet.data_length++;
         }
 
         // set CAN data
