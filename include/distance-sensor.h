@@ -4,6 +4,90 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/*
+ * struct distance_sensor_can_config (size = 8)
+ *
+ * Sent by the user device to the distance sensor to configure it. After
+ * powering up, the sensor remains idle until being configured.
+ *
+ * resolution
+ *     Number of sampled data points. Allowed values:
+ *     - 16 (4x4)
+ *     - 64 (8x8)
+ *
+ * frequency:
+ *     How frequently the sensor obtains new data, measured in Hz.
+ *     The allowed range depends on the *resolution*:
+ *     - if resolution = 16 (4x4), the range is [1, 60]
+ *     - if resolution = 64 (8x8), the range is [1, 15]
+ *
+ * sharpener:
+ *     TODO
+ *
+ * processing_mode:
+ *     Settings determining which area of the sensor's data is
+ *     processed, and which quantity is returned.
+ *
+ *     Bits 6-7 identify the area: 0=matrix, 1=column, 2=row, 3=point.
+ *     Other bits are treated differently based on the specified area.
+ *
+ *     if area == matrix:
+ *       + Bit +- Function --------+- Values ------------------------+
+ *       | 0-3 |  < unused >       |                                 |
+ *       | 4-5 |  result selector  |  0=min, 1=max, 2=average, 3=all |
+ *       | 6-7 |  area             |  0=matrix                       |
+ *       +-----+-------------------+---------------------------------+
+ *
+ *     if (area == column) or (area == row):
+ *       + Bit +- Function --------+- Values ------------------------+
+ *       | 0-2 |  column/row       |  0...7                          |
+ *       | 3   |  < unused >       |                                 |
+ *       | 4-5 |  result selector  |  0=min, 1=max, 2=average, 3=all |
+ *       | 6-7 |  area             |  1=column, 2=row                |
+ *       +-----+-------------------+---------------------------------+
+ *
+ *     if area == point:
+ *       + Bit +- Function --------+- Values ------------------------+
+ *       | 0-2 |  x coordinate     |  0...7                          |
+ *       | 3-5 |  y coordinate     |  0...7                          |
+ *       | 6-7 |  area             |  3=point                        |
+ *       +-----+-------------------+---------------------------------+
+ *
+ * threshold:
+ *     The distance to use as threshold value for calculating the
+ *     *below_threshold* value. Ignored if *processing_mode* specifies
+ *     multiple distance samples as result.
+ *
+ * threshold_delay:
+ *     Number of internal iterations that the distance needs to be
+ *     consistently below or above the threshold before updating the
+ *     *below_threshold* value. The corresponding amount of time is
+ *     equal to (threshold_delay / frequency) seconds. Ignored if
+ *     *processing_mode* specifies multiple distance samples as result.
+ *
+ * transmit_timing:
+ *     When the sensor should transmit new data.
+ *     If set to on-demand mode (0), the sensor will wait for the user
+ *     device to send a *Remote Transmit Request* message.
+ *     If set to continuous mode (1), the sensor will transmit as soon
+ *     as new data is available.
+ *
+ * transmit_condition:
+ *     The condition that needs to be satisfied for the sensor to
+ *     transmit data. Allowed values:
+ *     - 0=always true
+ *     - 1=below threshold event
+ *     - 2=above threshold event
+ *     - 3=any threshold event
+ *
+ *     Threshold events happen when the *below_threshold* value changes:
+ *     - if below_threshold = true, a 'below threshold event' happens
+ *     - if below_threshold = false, an 'above threshold event' happens
+ *
+ *     Ignored if *processing_mode* specifies multiple distance samples
+ *     as result.
+ */
+
 #define DISTANCE_SENSOR_CAN_CONFIG_SIZE 8
 struct distance_sensor_can_config {
     // ToF settings
@@ -21,39 +105,21 @@ struct distance_sensor_can_config {
     uint8_t transmit_condition : 2; // see below
 };
 
-// processing_mode:
-//
-// Bits 6-7 identify the area to process:
-//     0=matrix, 1=column, 2=row, 3=point
-// Other bits are treated differently based on the specified area.
-//
-// if area == matrix:
-//   + Bit +- Function --------+- Values ------------------------+
-//   | 0-3 |  < unused >       |                                 |
-//   | 4-5 |  result selector  |  0=min, 1=max, 2=average, 3=all |
-//   | 6-7 |  area             |  0=matrix                       |
-//   +-----+-------------------+---------------------------------+
-//
-// if (area == column) or (area == row):
-//   + Bit +- Function --------+- Values ------------------------+
-//   | 0-2 |  column/row       |  0...7                          |
-//   | 3   |  < unused >       |                                 |
-//   | 4-5 |  result selector  |  0=min, 1=max, 2=average, 3=all |
-//   | 6-7 |  area             |  1=column, 2=row                |
-//   +-----+-------------------+---------------------------------+
-//
-// if area == point:
-//   + Bit +- Function --------+- Values ------------------------+
-//   | 0-2 |  x coordinate     |  0...7                          |
-//   | 3-5 |  y coordinate     |  0...7                          |
-//   | 6-7 |  area             |  3=point                        |
-//   +-----+-------------------+---------------------------------+
-
-// transmit_condition:
-// - 0=always true
-// - 1=below threshold event
-// - 2=above threshold event
-// - 3=any threshold event
+/*
+ * struct distance_sensor_can_sample (size = 4)
+ *
+ * Sent by the distance sensor when configured to obtain a single
+ * distance sample.
+ *
+ * distance:
+ *     The sample distance, in millimeters.
+ *
+ * below_threshold:
+ *     An indication of whether the distance is below the configured
+ *     *threshold* or not. Note that the sensor only updates this value
+ *     if the distance has been consistently below or above the
+ *     threshold for at least *threshold_delay* internal iterations.
+ */
 
 #define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
 struct distance_sensor_can_sample {
@@ -98,6 +164,30 @@ struct distance_sensor_can_sample {
  *   packets, the receiver should keep track of the batch ID. Whenever
  *   the batch ID changes (i.e. a new batch is being transmitted), the
  *   previous batch should be considered incomplete.
+ */
+
+/*
+ * struct distance_sensor_can_data_packet (size = 8)
+ *
+ * Sent by the distance sensor, as part of a batch of packets, when
+ * configured to obtain multiple distance samples.
+ *
+ * sequence_number:
+ *     Identifier of the packet within its batch.
+ *
+ * data_length:
+ *     Number of data samples carried by the packet, from 1 to 3. Only
+ *     the last packet of a batch is allowed to contain less than 3.
+ *
+ * batch_id:
+ *     Identifier of the packet's batch.
+ *
+ * last_of_batch:
+ *     True if the packet is the last of its batch, false otherwise.
+ *
+ * data:
+ *     Array of samples carried by the packet, measured in millimeters.
+ *     Invalid samples are represented by a negative value.
  */
 
 #define DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE 8
