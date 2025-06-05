@@ -239,9 +239,11 @@ static void batch_insert(struct DataBatch *batch, int sensor_id,
 }
 
 static void batch_print(struct DataBatch *batch, int sensor_id) {
+    const int line_length = (batch->data_length == 16 ? 4 : 8);
+
     printf("[Receiver] received samples (sensor=%d):\n", sensor_id);
     for(int i = 0; i < batch->data_length; i++) {
-        if(i % 4 == 0) {
+        if(i % line_length == 0) {
             if(i != 0)
                 printf("\n");
             printf("  ");
