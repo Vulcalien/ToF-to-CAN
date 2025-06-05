@@ -119,7 +119,8 @@ static void handle_message(const struct can_msg_s *msg) {
             printf("\n"); // write blank line as separator
         } break;
 
-        case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID: {
+        case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID:
+        case DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID: {
             // if RTR bit is set, request a data message
             if(msg->cm_hdr.ch_rtr)
                 sem_post(&request_data_message);
