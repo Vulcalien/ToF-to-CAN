@@ -164,7 +164,7 @@ static void single_sample_receiver(void) {
     while(1) {
         uint32_t can_id;
         uint8_t data[8];
-        can_read(&can_id, &data);
+        can_read(&can_id, data);
 
         if(can_id & RTR_BIT)
             continue;
