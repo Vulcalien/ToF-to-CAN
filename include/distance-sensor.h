@@ -63,13 +63,50 @@ struct distance_sensor_can_sample {
     char _padding[1];
 };
 
+/*
+ * Definition of a packet-based protocol for transmitting multiple
+ * samples, with support for out-of-order packets and loss-tolerance.
+ *
+ *
+ * To transmit all the data it needs to, the sensor sends multiple
+ * packets organized in batches.
+ *
+ * A batch is assigned a batch ID, and all packets within it share the
+ * same batch ID. Packets within a batch are assigned a sequence number
+ * from 0 to N-1, with N being the total number of packets in the batch.
+ *
+ * Since N is not known beforehand, the last packet of a batch has the
+ * 'last of batch' flag set. The receiver should set N to the last
+ * packet's sequence number plus one.
+ *
+ * Packets may contain from 1 to 3 samples: the 'data length' attribute
+ * specifies this information. All packets, except the last one, are
+ * required to contain 3 samples.
+ *
+ *
+ * Handling out-of-order packets:
+ *   the receiver should buffer the samples received, offset by
+ *   (sequence_number * 3), regardless of the order of arrival.
+ *
+ *   Note that the last packet of a batch may arrive before other
+ *   packets within that batch: use the 'last of batch' flag to obtain
+ *   the total number of packets, then wait for all of them to arrive.
+ *
+ * Handling packet loss:
+ *   first, note that packets are never retransmitted, so there is no
+ *   way to recover lost data. To avoid waiting indefinitely for lost
+ *   packets, the receiver should keep track of the batch ID. Whenever
+ *   the batch ID changes (i.e. a new batch is being transmitted), the
+ *   previous batch should be considered incomplete.
+ */
+
 #define DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE 8
 struct distance_sensor_can_data_packet {
     uint8_t sequence_number;
 
-    uint8_t data_length     : 2;
-    uint8_t stream_id       : 5;
-    uint8_t last_of_stream  : 1;
+    uint8_t data_length   : 2;
+    uint8_t batch_id      : 5;
+    uint8_t last_of_batch : 1;
 
     int16_t data[3];
 };

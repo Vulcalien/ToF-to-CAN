@@ -190,8 +190,8 @@ static int write_single_sample(int16_t distance, bool below_threshold) {
 }
 
 static int write_data_packets(int16_t *data, int length) {
-    static int stream_id = 0;
-    stream_id++;
+    static int batch_id = 0;
+    batch_id++;
 
     struct can_msg_s msg;
 
@@ -210,8 +210,8 @@ static int write_data_packets(int16_t *data, int length) {
     for(int i = 0; i < packet_count; i++) {
         struct distance_sensor_can_data_packet packet = {
             .sequence_number = i,
-            .stream_id       = stream_id,
-            .last_of_stream  = (i == packet_count - 1),
+            .batch_id        = batch_id,
+            .last_of_batch   = (i == packet_count - 1),
         };
 
         // set packet sample data
