@@ -176,9 +176,111 @@ static void single_sample_receiver(void) {
             struct distance_sensor_can_sample sample_data;
             memcpy(&sample_data, data, sizeof(sample_data));
 
-            printf("[Receiver] received sample (sensor ID=%d):\n", sensor_id);
+            printf("[Receiver] received sample (sensor=%d):\n", sensor_id);
             printf("  distance: %d\n", sample_data.distance);
             printf("  below threshold: %d\n", sample_data.below_threshold);
+        }
+    }
+}
+
+struct DataBatch {
+    int16_t data[64];
+    int data_length;
+
+    int batch_id;
+    int packets_received;
+    int packets_expected;
+};
+
+static void batch_reset(struct DataBatch *batch,
+                        int sensor_id, int batch_id) {
+    // check if the previous batch was interrupted
+    if(batch->packets_received != batch->packets_expected) {
+        printf(
+            "[Receiver] batch interrupted before receiving all packets "
+            "(sensor=%d, batch=%d, received only %d)\n",
+            sensor_id, batch->batch_id, batch->packets_received
+        );
+    }
+
+    batch->data_length      = 0;
+    batch->batch_id         = batch_id;
+    batch->packets_received = 0;
+    batch->packets_expected = 0;
+}
+
+static void batch_insert(struct DataBatch *batch, int sensor_id,
+                         struct distance_sensor_can_data_packet *packet) {
+    const int buffer_length = sizeof(batch->data) / sizeof(int16_t);
+    const int offset = packet->sequence_number * 3;
+
+    // check if packet data would overflow the buffer
+    if(offset + packet->data_length > buffer_length) {
+        printf(
+            "[Receiver] received packet that would overflow buffer "
+            "(sensor=%d, seq_number=%d, data_len=%d)\n",
+            sensor_id, packet->sequence_number, packet->data_length
+        );
+        return;
+    }
+
+    // copy packet data into buffer
+    batch->packets_received++;
+    batch->data_length += packet->data_length;
+    memcpy(
+        &batch->data[offset],
+        &packet->data,
+        packet->data_length * sizeof(int16_t)
+    );
+
+    // if packet is last of batch, set count of expected packets
+    if(packet->last_of_batch)
+        batch->packets_expected = 1 + packet->sequence_number;
+}
+
+static void batch_print(struct DataBatch *batch, int sensor_id) {
+    printf("[Receiver] received samples (sensor=%d):\n", sensor_id);
+    for(int i = 0; i < batch->data_length; i++) {
+        if(i % 4 == 0) {
+            if(i != 0)
+                printf("\n");
+            printf("  ");
+        }
+        printf("%d, ", batch->data[i]);
+    }
+    printf("\n");
+}
+
+static void data_packets_receiver(void) {
+    static struct DataBatch batches[DISTANCE_SENSOR_MAX_COUNT];
+
+    while(1) {
+        uint32_t can_id;
+        uint8_t data[8];
+        can_read(&can_id, data);
+
+        if(can_id & RTR_BIT)
+            continue;
+
+        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
+        const int msg_type  = can_id - sensor_id;
+
+        if(msg_type == DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID) {
+            struct distance_sensor_can_data_packet packet;
+            memcpy(&packet, data, sizeof(packet));
+
+            struct DataBatch *batch = &batches[sensor_id];
+
+            // if packet has a new batch ID, reset the batch buffer
+            if(batch->batch_id != packet.batch_id)
+                batch_reset(batch, sensor_id, packet.batch_id);
+
+            // insert new data into the batch buffer
+            batch_insert(batch, sensor_id, &packet);
+
+            // if all packets have been received, print the batch
+            if(batch->packets_received == batch->packets_expected)
+                batch_print(batch, sensor_id);
         }
     }
 }
@@ -309,6 +411,31 @@ static void demo_continuous_threshold_event_sender(void) {
 }
 
 /* ================================================================== */
+/*                     demo: all points in matrix                     */
+/* ================================================================== */
+
+static void demo_all_points_in_matrix_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 16,
+        .frequency  = 1,
+        .sharpener  = 5,
+
+        .processing_mode = 0x30, // all points in matrix
+        .threshold       = 0, // ignored
+        .threshold_delay = 0, // ignored
+
+        .transmit_timing    = 0, // on-demand
+        .transmit_condition = 0, // always true
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+/* ================================================================== */
 /*                                main                                */
 /* ================================================================== */
 
@@ -354,6 +481,10 @@ static struct Demo demos[] = {
         "continuous transmission, but wait for any threshold event",
         demo_continuous_threshold_event_sender,
         single_sample_receiver
+    }, {
+        "all points in matrix",
+        demo_all_points_in_matrix_sender,
+        data_packets_receiver
     }
 };
 
