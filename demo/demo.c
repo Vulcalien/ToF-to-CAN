@@ -438,6 +438,31 @@ static void demo_all_points_in_matrix_sender(void) {
 }
 
 /* ================================================================== */
+/*                    demo: all points in row n. 2                    */
+/* ================================================================== */
+
+static void demo_all_points_in_row_2_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 16,
+        .frequency  = 1,
+        .sharpener  = 5,
+
+        .processing_mode = 0xb2, // all points in row n. 2
+        .threshold       = 0, // ignored
+        .threshold_delay = 0, // ignored
+
+        .transmit_timing    = 0, // on-demand
+        .transmit_condition = 0, // always true
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+/* ================================================================== */
 /*                                main                                */
 /* ================================================================== */
 
@@ -486,6 +511,10 @@ static struct Demo demos[] = {
     }, {
         "all points in matrix",
         demo_all_points_in_matrix_sender,
+        data_packets_receiver
+    }, {
+        "all points in row n. 2",
+        demo_all_points_in_row_2_sender,
         data_packets_receiver
     }
 };
