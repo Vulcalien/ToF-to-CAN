@@ -5,4 +5,4 @@ mount -t binfs /bin
 #mount -t procfs /proc
 
 echo "Starting ToF app"
-#tof_app
+tof_app start
