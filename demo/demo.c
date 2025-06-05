@@ -160,7 +160,7 @@ static void request_sample(void) {
     can_write(can_id | RTR_BIT, data, 0);
 }
 
-static void distance_receiver(void) {
+static void single_sample_receiver(void) {
     while(1) {
         uint32_t can_id;
         uint8_t data[8];
@@ -337,23 +337,23 @@ static struct Demo demos[] = {
     {
         "default configuration",
         demo_default_config_sender,
-        distance_receiver
+        single_sample_receiver
     }, {
         "higher frequency (consecutive requests are handled quickly)",
         demo_higher_frequency_sender,
-        distance_receiver
+        single_sample_receiver
     }, {
         "wait for below threshold event",
         demo_below_threshold_sender,
-        distance_receiver
+        single_sample_receiver
     }, {
         "continuous transmission",
         demo_continuous_sender,
-        distance_receiver
+        single_sample_receiver
     }, {
         "continuous transmission, but wait for any threshold event",
         demo_continuous_threshold_event_sender,
-        distance_receiver
+        single_sample_receiver
     }
 };
 
