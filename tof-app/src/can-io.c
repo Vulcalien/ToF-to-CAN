@@ -39,7 +39,7 @@
 #define CONDITION_ANY_THRESHOLD_EVENT   3
 
 static int can_fd;
-static int sensor_id; // TODO set value
+static int sensor_id;
 
 static int transmit_timing;
 static int transmit_condition;
@@ -383,4 +383,19 @@ int can_io_start(void) {
         return 1;
     }
     return 0;
+}
+
+int can_io_set_sensor_id(int id) {
+    int err = 0;
+
+    if(id > 0 && id < DISTANCE_SENSOR_MAX_COUNT)
+        sensor_id = id;
+    else
+        err = 1;
+
+    printf(
+        "[CAN-IO] setting sensor ID to %x (err=%d)\n",
+        id, err
+    );
+    return err;
 }
