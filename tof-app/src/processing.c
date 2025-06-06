@@ -241,11 +241,6 @@ int processing_start(void) {
         printf("[Processing] error creating thread\n");
         return 1;
     }
-
-    // DEBUG
-    void *retval;
-    pthread_join(thread, &retval);
-
     return 0;
 }
 
