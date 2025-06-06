@@ -26,8 +26,7 @@
 #include "tof.h"
 
 static int cmd_set_id(int id) {
-    // TODO
-    return 0;
+    return can_io_set_sensor_id(id);
 }
 
 static int cmd_help(char *arg0) {
@@ -49,6 +48,14 @@ int main(int argc, char *argv[]) {
 
     can_io_start();
     processing_start();
+
+    // if SENSOR_ID environment variable is set, use it as sensor ID
+    char *sensor_id_var = getenv("SENSOR_ID");
+    if(sensor_id_var) {
+        int id;
+        sscanf(sensor_id_var, "%d", &id);
+        cmd_set_id(id);
+    }
 
     cmd_help(arg0);
     while(true) {

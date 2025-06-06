@@ -394,7 +394,7 @@ int can_io_set_sensor_id(int id) {
         err = 1;
 
     printf(
-        "[CAN-IO] setting sensor ID to %x (err=%d)\n",
+        "[CAN-IO] setting sensor ID to %d (err=%d)\n",
         id, err
     );
     return err;
