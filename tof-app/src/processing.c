@@ -21,8 +21,7 @@
 #include <limits.h>
 #include <unistd.h>
 #include <pthread.h>
-
-#include "binarysem.h"
+#include <semaphore.h>
 
 #include "tof.h"
 #include "debug.h"
@@ -38,7 +37,7 @@
 #define SELECTOR_ALL     3
 
 pthread_mutex_t processing_data_mutex;
-binarysem       processing_data_available;
+sem_t           processing_data_available;
 int             processing_data_length;
 
 int16_t processing_data[PROCESSING_DATA_MAX_LENGTH];
@@ -63,8 +62,8 @@ int processing_init(void) {
     }
 
     // initialize data available semaphore
-    if(binarysem_init(&processing_data_available, 0)) {
-        printf("[Processing] error initializing data available binarysem\n");
+    if(sem_init(&processing_data_available, 0, 0)) {
+        printf("[Processing] error initializing data available semaphore\n");
         return 1;
     }
     return 0;
@@ -223,9 +222,18 @@ static void *processing_run(void *arg) {
     printf("[Processing] thread started\n");
 
     while(true) {
-        // if not paused, try to update data and mark it as available
-        if(!is_paused && update_data() == 0)
-            binarysem_post(&processing_data_available);
+        // if not paused, try to update data
+        if(!is_paused && update_data() == 0) {
+            // get semaphore's current value
+            int sem_value;
+            sem_getvalue(&processing_data_available, &sem_value);
+
+            // Since old data is overwritten by new data, the maximum
+            // value of the semaphore is 1: only increase its value if
+            // the current value is 0.
+            if(sem_value == 0)
+                sem_post(&processing_data_available);
+        }
 
         // wait 1ms
         usleep(1000);

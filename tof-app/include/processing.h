@@ -20,13 +20,12 @@
 #include "main.h"
 
 #include <pthread.h>
-
-#include "binarysem.h"
+#include <semaphore.h>
 
 #define PROCESSING_DATA_MAX_LENGTH 64
 
 extern pthread_mutex_t processing_data_mutex;
-extern binarysem       processing_data_available;
+extern sem_t           processing_data_available;
 extern int             processing_data_length;
 
 extern int16_t processing_data[PROCESSING_DATA_MAX_LENGTH];

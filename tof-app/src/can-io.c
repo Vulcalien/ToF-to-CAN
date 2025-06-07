@@ -21,10 +21,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <sys/ioctl.h>
 #include <nuttx/can/can.h>
-
-#include "binarysem.h"
 
 #include "distance-sensor.h"
 #include "processing.h"
@@ -282,7 +281,7 @@ static void retrieve_data(int16_t *data, bool *below_threshold) {
     bool data_ready = false;
     while(!data_ready) {
         // wait for data to become available
-        binarysem_wait(&processing_data_available);
+        sem_wait(&processing_data_available);
 
         // lock data mutex
         if(pthread_mutex_lock(&processing_data_mutex)) {
