@@ -11,3 +11,6 @@
 /tof-app/**/.built
 /tof-app/**/.depend
 /tof-app/**/Make.dep
+
+# generated rcS file
+/etc/init.d/rcS

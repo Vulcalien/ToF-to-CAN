@@ -1,8 +1,9 @@
-.PHONY: all demo clean distclean program reset qconfig
+.PHONY: all demo clean distclean genromfs program reset qconfig
 
 ROMFS := config/include/romfs.h
+RCS   := etc/init.d/rcS
 
-all: submodules/nuttx/.config submodules/apps/tof-app $(ROMFS)
+all: submodules/nuttx/.config genromfs
 	cd submodules/nuttx && $(MAKE) all && arm-none-eabi-size nuttx
 
 demo:
@@ -10,12 +11,23 @@ demo:
 
 clean: submodules/apps/tof-app
 	$(MAKE) -C submodules/nuttx clean
-	-rm $(ROMFS)
+	-rm $(ROMFS) $(RCS)
 
 distclean: submodules/apps/tof-app
 	$(MAKE) -C submodules/nuttx distclean
 	cd config/tof-l431-nsh && cp -f defconfig.src defconfig
-	-rm submodules/apps/tof-app $(ROMFS)
+	-rm submodules/apps/tof-app $(ROMFS) $(RCS)
+
+genromfs:
+	@if [ "$(ID)" = "" ]; then\
+		echo Error: please use 'make ID=num';\
+		exit 1;\
+	fi
+	mkdir -p $(dir $(RCS))
+	sed "s/{{SENSOR_ID}}/$(ID)/" rcS.template > $(RCS)
+	genromfs -f romfs.img -d etc -V 'ROMFS /etc'
+	xxd -i romfs.img $(ROMFS)
+	-rm romfs.img
 
 program: all
 	openocd \
@@ -47,8 +59,3 @@ submodules/apps/tof-app:
 
 submodules/nuttx/.config: submodules/apps/tof-app
 	cd submodules/nuttx/tools && ./configure.sh ../../config/tof-l431-nsh
-
-$(ROMFS): etc/init.d/rcS
-	genromfs -f romfs.img -d etc -V 'ROMFS /etc'
-	xxd -i romfs.img $@
-	-rm romfs.img
