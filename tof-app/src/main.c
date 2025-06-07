@@ -32,7 +32,7 @@ static int cmd_set_id(int id) {
 static int cmd_help(char *arg0) {
     printf("Usage: %s [command] [args]\n", arg0);
     printf("List of available commands:\n");
-    printf("    set-id      permanently sets the sensor ID\n");
+    printf("    set-id      sets the sensor ID\n");
     printf("    exit        exits the program\n");
     printf("    help        prints this help message\n");
     return 0;
