@@ -92,17 +92,17 @@
 struct distance_sensor_can_config {
     // ToF settings
     uint8_t resolution; // 16 or 64
-    uint8_t frequency;  // 1...60Hz
+    uint8_t frequency;  // see documentation above
     uint8_t sharpener;  // 0...99%
 
     // processing settings
-    uint8_t  processing_mode; // see below
+    uint8_t  processing_mode; // see documentation above
     uint16_t threshold;       // 0...4000mm
     uint8_t  threshold_delay; // 0...255
 
     // data transmission
     uint8_t transmit_timing    : 1; // 0=on-demand, 1=continuous
-    uint8_t transmit_condition : 2; // see below
+    uint8_t transmit_condition : 2; // see documentation above
 };
 
 /*
