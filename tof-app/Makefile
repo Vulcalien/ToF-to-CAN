@@ -14,8 +14,4 @@ CFLAGS += -Iinclude -I../include
 CSRCS  += $(wildcard lib/vl53l5cx/src/*.c)
 CFLAGS += -Ilib/vl53l5cx/inc
 
-# binarysem library
-CSRCS  += $(wildcard lib/binarysem/*.c)
-CFLAGS += -Ilib/binarysem
-
 include $(APPDIR)/Application.mk
