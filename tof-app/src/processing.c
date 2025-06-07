@@ -223,11 +223,9 @@ static void *processing_run(void *arg) {
     printf("[Processing] thread started\n");
 
     while(true) {
-        if(!is_paused) {
-            // try to update data and, on success, mark it as available
-            if(update_data() == 0)
-                binarysem_post(&processing_data_available);
-        }
+        // if not paused, try to update data and mark it as available
+        if(!is_paused && update_data() == 0)
+            binarysem_post(&processing_data_available);
 
         // wait 1ms
         usleep(1000);
