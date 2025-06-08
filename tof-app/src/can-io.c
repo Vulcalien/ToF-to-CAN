@@ -58,7 +58,8 @@ static inline int set_transmit_timing(int timing) {
     else
         err = 1;
 
-    // if timing is continuous, request a data message
+    // The sender thread might be waiting for a data message request, so
+    // if the new timing is continuous, send a request to unlock it.
     if(transmit_timing == TIMING_CONTINUOUS)
         sem_post(&request_data_message);
 
@@ -312,8 +313,9 @@ static void *sender_run(void *arg) {
     bool below_threshold;
 
     while(true) {
-        // wait for a data message request
-        sem_wait(&request_data_message);
+        // if timing is on-demand, wait for a data message request
+        if(transmit_timing == TIMING_ON_DEMAND)
+            sem_wait(&request_data_message);
 
         // retrieve data
         retrieve_data(data, &below_threshold);
@@ -323,10 +325,6 @@ static void *sender_run(void *arg) {
             write_single_sample(data[0], below_threshold);
         else
             write_data_packets(data, processing_data_length);
-
-        // if timing is continuous, request another data message
-        if(transmit_timing == TIMING_CONTINUOUS)
-            sem_post(&request_data_message);
     }
     return NULL;
 }
