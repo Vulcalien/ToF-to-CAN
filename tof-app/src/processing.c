@@ -52,7 +52,7 @@ static int result_selector;
 static int threshold;
 static int threshold_delay;
 
-static bool is_paused = true; // after startup, processing stay paused
+static bool is_paused = true; // after startup, device is idle
 
 int processing_init(void) {
     // initialize data mutex

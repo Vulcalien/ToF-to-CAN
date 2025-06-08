@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -142,20 +143,35 @@ static void *receiver_run(void *arg) {
 /*                               Sender                               */
 /* ================================================================== */
 
+static bool is_sender_paused = true; // after startup, device is idle
+
 static void sender_pause(void) {
     processing_pause();
 
     // drop all data message requests
     while(sem_trywait(&request_data_message) == 0);
 
-    // TODO drop request currently being served, if any
+    // Pause sender thread.
+    //
+    // First, set timing to on-demand, to ensure the thread will be
+    // blocked when waiting for a request. For this to work, all
+    // requests must have been dropped earlier.
+    //
+    // Then, set the 'paused' flag to true, so if the sender is already
+    // serving a request and waiting for data to become available, that
+    // request is dropped.
+    //
+    // Wait some time to let the sender finish its work and be blocked.
+    transmit_timing = TIMING_ON_DEMAND;
+    is_sender_paused = true;
+    usleep(10000); // wait 10ms
 }
 
 static void sender_resume(void) {
+    is_sender_paused = false;
     processing_resume();
 
-    // The sender thread might be waiting for a data message request, so
-    // if the new timing is continuous, send a request to unlock it.
+    // if timing is continuous, unblock the sender waiting for a request
     if(transmit_timing == TIMING_CONTINUOUS)
         sem_post(&request_data_message);
 }
@@ -262,11 +278,17 @@ static bool should_transmit(bool below_threshold, bool threshold_event) {
     return false;
 }
 
-static void retrieve_data(int16_t *data, bool *below_threshold) {
+static int retrieve_data(int16_t *data, bool *below_threshold) {
     bool data_ready = false;
     while(!data_ready) {
         // wait for data to become available
-        sem_wait(&processing_data_available);
+        while(sem_trywait(&processing_data_available)) {
+            usleep(1000); // wait 1ms
+
+            // if sender was paused while waiting, do not retrieve data
+            if(is_sender_paused)
+                return 1;
+        }
 
         // lock data mutex
         if(pthread_mutex_lock(&processing_data_mutex)) {
@@ -288,6 +310,7 @@ static void retrieve_data(int16_t *data, bool *below_threshold) {
         // check if data is ready to be sent
         data_ready = should_transmit(*below_threshold, threshold_event);
     }
+    return 0;
 }
 
 static void *sender_run(void *arg) {
@@ -301,8 +324,9 @@ static void *sender_run(void *arg) {
         if(transmit_timing == TIMING_ON_DEMAND)
             sem_wait(&request_data_message);
 
-        // retrieve data
-        retrieve_data(data, &below_threshold);
+        // retrieve data; on failure, drop the request
+        if(retrieve_data(data, &below_threshold))
+            continue;
 
         // send CAN message(s)
         if(processing_data_length == 1)
