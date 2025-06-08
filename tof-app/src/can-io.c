@@ -45,6 +45,9 @@ static int transmit_condition;
 
 static sem_t request_data_message;
 
+static void sender_pause(void);
+static void sender_resume(void);
+
 /* ================================================================== */
 /*                              Receiver                              */
 /* ================================================================== */
@@ -57,11 +60,6 @@ static inline int set_transmit_timing(int timing) {
         transmit_timing = timing;
     else
         err = 1;
-
-    // The sender thread might be waiting for a data message request, so
-    // if the new timing is continuous, send a request to unlock it.
-    if(transmit_timing == TIMING_CONTINUOUS)
-        sem_post(&request_data_message);
 
     printf(
         "[CAN-IO] setting transmit timing to %d (err=%d)\n",
@@ -109,9 +107,7 @@ static void handle_message(const struct can_msg_s *msg) {
             }
 
             printf("\n=== Configuring ===\n");
-
-            // pause data processing
-            processing_pause();
+            sender_pause(); // pause sender thread
 
             struct distance_sensor_can_config *config =
                 (struct distance_sensor_can_config *) &msg->cm_data;
@@ -130,9 +126,7 @@ static void handle_message(const struct can_msg_s *msg) {
             set_transmit_timing(config->transmit_timing);
             set_transmit_condition(config->transmit_condition);
 
-            // resume data processing
-            processing_resume();
-
+            sender_resume(); // resume sender thread
             printf("\n"); // write blank line as separator
         } break;
 
@@ -175,6 +169,24 @@ static void *receiver_run(void *arg) {
 /* ================================================================== */
 /*                               Sender                               */
 /* ================================================================== */
+
+static void sender_pause(void) {
+    processing_pause();
+
+    // drop all data message requests
+    while(sem_trywait(&request_data_message) == 0);
+
+    // TODO drop request currently being served, if any
+}
+
+static void sender_resume(void) {
+    processing_resume();
+
+    // The sender thread might be waiting for a data message request, so
+    // if the new timing is continuous, send a request to unlock it.
+    if(transmit_timing == TIMING_CONTINUOUS)
+        sem_post(&request_data_message);
+}
 
 static int write_single_sample(int16_t distance, bool below_threshold) {
     struct can_msg_s msg;
