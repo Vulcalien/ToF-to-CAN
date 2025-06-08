@@ -54,34 +54,6 @@ static void sender_resume(void);
 
 #define RECEIVER_BUFFER_SIZE (sizeof(struct can_msg_s))
 
-static inline int set_transmit_timing(int timing) {
-    int err = 0;
-    if(timing >= 0 && timing < 2)
-        transmit_timing = timing;
-    else
-        err = 1;
-
-    printf(
-        "[CAN-IO] setting transmit timing to %d (err=%d)\n",
-        timing, err
-    );
-    return err;
-}
-
-static inline int set_transmit_condition(int condition) {
-    int err = 0;
-    if(condition >= 0 && condition < 4)
-        transmit_condition = condition;
-    else
-        err = 1;
-
-    printf(
-        "[CAN-IO] setting transmit condition to %d (err=%d)\n",
-        condition, err
-    );
-    return err;
-}
-
 static void handle_message(const struct can_msg_s *msg) {
     // TODO ignore confirmation messages???
     /*if(msg->cm_hdr.tcf)*/
@@ -123,8 +95,8 @@ static void handle_message(const struct can_msg_s *msg) {
             processing_set_threshold_delay(config->threshold_delay);
 
             // set transmission settings
-            set_transmit_timing(config->transmit_timing);
-            set_transmit_condition(config->transmit_condition);
+            can_io_set_transmit_timing(config->transmit_timing);
+            can_io_set_transmit_condition(config->transmit_condition);
 
             sender_resume(); // resume sender thread
             printf("\n"); // write blank line as separator
@@ -405,6 +377,34 @@ int can_io_set_sensor_id(int id) {
     printf(
         "[CAN-IO] setting sensor ID to %d (err=%d)\n",
         id, err
+    );
+    return err;
+}
+
+int can_io_set_transmit_timing(int timing) {
+    int err = 0;
+    if(timing >= 0 && timing < 2)
+        transmit_timing = timing;
+    else
+        err = 1;
+
+    printf(
+        "[CAN-IO] setting transmit timing to %d (err=%d)\n",
+        timing, err
+    );
+    return err;
+}
+
+int can_io_set_transmit_condition(int condition) {
+    int err = 0;
+    if(condition >= 0 && condition < 4)
+        transmit_condition = condition;
+    else
+        err = 1;
+
+    printf(
+        "[CAN-IO] setting transmit condition to %d (err=%d)\n",
+        condition, err
     );
     return err;
 }

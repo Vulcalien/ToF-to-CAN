@@ -20,4 +20,7 @@
 #include "main.h"
 
 extern int can_io_start(void);
+
 extern int can_io_set_sensor_id(int id);
+extern int can_io_set_transmit_timing(int timing);
+extern int can_io_set_transmit_condition(int condition);
