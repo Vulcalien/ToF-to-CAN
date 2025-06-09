@@ -27,7 +27,6 @@ static int tof_resolution;
 
 static VL53L5CX_Configuration config;
 static VL53L5CX_ResultsData results;
-static bool is_ranging = false;
 
 extern void set_i2c_rst(bool on);
 extern void set_LPn(bool on);
@@ -101,27 +100,17 @@ int tof_init(void) {
 }
 
 void tof_start_ranging(void) {
-    // if already ranging, do nothing
-    if(is_ranging)
-        return;
-
     while(vl53l5cx_start_ranging(&config)) {
-        printf("[ToF] error trying to start ranging, retrying\n");
+        printf("[ToF] error in vl53l5cx_start_ranging, retrying\n");
         usleep(1000); // wait 1ms
     }
-    is_ranging = true;
 }
 
 void tof_stop_ranging(void) {
-    // if already not ranging, do nothing
-    if(!is_ranging)
-        return;
-
     while(vl53l5cx_stop_ranging(&config)) {
-        printf("[ToF] error trying to stop ranging, retrying\n");
+        printf("[ToF] error in vl53l5cx_stop_ranging, retrying\n");
         usleep(1000); // wait 1ms
     }
-    is_ranging = false;
 }
 
 int tof_set_resolution(int resolution) {
