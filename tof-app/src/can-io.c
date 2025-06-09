@@ -151,20 +151,9 @@ static void sender_pause(void) {
     // drop all data message requests
     while(sem_trywait(&request_data_message) == 0);
 
-    // Pause sender thread.
-    //
-    // First, set timing to on-demand, to ensure the thread will be
-    // blocked when waiting for a request. For this to work, all
-    // requests must have been dropped earlier.
-    //
-    // Then, set the 'paused' flag to true, so if the sender is already
-    // serving a request and waiting for data to become available, that
-    // request is dropped.
-    //
-    // Wait some time to let the sender finish its work and be blocked.
-    transmit_timing = TIMING_ON_DEMAND;
+    // pause sender thread
     is_sender_paused = true;
-    usleep(10000); // wait 10ms
+    usleep(10000); // wait 10ms to ensure the sender blocks
 }
 
 static void sender_resume(void) {
@@ -320,8 +309,8 @@ static void *sender_run(void *arg) {
     bool below_threshold;
 
     while(true) {
-        // if timing is on-demand, wait for a data message request
-        if(transmit_timing == TIMING_ON_DEMAND)
+        // if paused or timing is on-demand, wait for a request
+        if(is_sender_paused || transmit_timing == TIMING_ON_DEMAND)
             sem_wait(&request_data_message);
 
         // retrieve data; on failure, drop the request
