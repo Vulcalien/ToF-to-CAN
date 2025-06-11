@@ -24,7 +24,6 @@
 #include <semaphore.h>
 
 #include "tof.h"
-#include "debug.h"
 
 #define AREA_MATRIX 0
 #define AREA_COLUMN 1
@@ -212,7 +211,7 @@ static int update_data(void) {
     }
 
     // dump ToF matrix and processed data
-    if(debug_should_dump)
+    if(debug_flag)
         dump_data(matrix);
 
     return 0;

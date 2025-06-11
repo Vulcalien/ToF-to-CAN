@@ -25,6 +25,8 @@
 #include "can-io.h"
 #include "tof.h"
 
+bool debug_flag = false;
+
 static int cmd_set_id(int id) {
     return can_io_set_sensor_id(id);
 }
