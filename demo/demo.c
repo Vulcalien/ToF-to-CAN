@@ -413,12 +413,12 @@ static void demo_continuous_threshold_event_sender(void) {
 }
 
 /* ================================================================== */
-/*                     demo: all points in matrix                     */
+/*                   demo: all points in 4x4 matrix                   */
 /* ================================================================== */
 
-static void demo_all_points_in_matrix_sender(void) {
+static void demo_all_points_in_4x4_matrix_sender(void) {
     struct distance_sensor_can_config config = {
-        .resolution = 16,
+        .resolution = 16, // 4x4
         .frequency  = 1,
         .sharpener  = 5,
 
@@ -427,7 +427,32 @@ static void demo_all_points_in_matrix_sender(void) {
         .threshold_delay = 0, // ignored
 
         .transmit_timing    = 0, // on-demand
-        .transmit_condition = 0, // always true
+        .transmit_condition = 0, // ignored (multiple samples)
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+/* ================================================================== */
+/*                   demo: all points in 8x8 matrix                   */
+/* ================================================================== */
+
+static void demo_all_points_in_8x8_matrix_sender(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 64, // 8x8
+        .frequency  = 1,
+        .sharpener  = 5,
+
+        .processing_mode = 0x30, // all points in matrix
+        .threshold       = 0, // ignored
+        .threshold_delay = 0, // ignored
+
+        .transmit_timing    = 0, // on-demand
+        .transmit_condition = 0, // ignored (multiple samples)
     };
     config_sensor(&config);
 
@@ -450,6 +475,31 @@ static void demo_all_points_in_row_2_sender(void) {
         .processing_mode = 0xb2, // all points in row n. 2
         .threshold       = 0, // ignored
         .threshold_delay = 0, // ignored
+
+        .transmit_timing    = 0, // on-demand
+        .transmit_condition = 0, // ignored (multiple samples)
+    };
+    config_sensor(&config);
+
+    while(1) {
+        getchar();
+        request_sample();
+    }
+}
+
+/* ================================================================== */
+/*                  demo: point (3, 3) in 8x8 matrix                  */
+/* ================================================================== */
+
+static void demo_point_3_3_in_8x8_matrix(void) {
+    struct distance_sensor_can_config config = {
+        .resolution = 64, // 8x8
+        .frequency  = 1,
+        .sharpener  = 5,
+
+        .processing_mode = 0xdb, // point (3, 3)
+        .threshold       = 200,
+        .threshold_delay = 2,
 
         .transmit_timing    = 0, // on-demand
         .transmit_condition = 0, // always true
@@ -509,13 +559,21 @@ static struct Demo demos[] = {
         demo_continuous_threshold_event_sender,
         single_sample_receiver
     }, {
-        "all points in matrix",
-        demo_all_points_in_matrix_sender,
+        "all points in 4x4 matrix",
+        demo_all_points_in_4x4_matrix_sender,
+        data_packets_receiver
+    }, {
+        "all points in 8x8 matrix",
+        demo_all_points_in_8x8_matrix_sender,
         data_packets_receiver
     }, {
         "all points in row n. 2",
         demo_all_points_in_row_2_sender,
         data_packets_receiver
+    }, {
+        "point (3, 3) in 8x8 matrix",
+        demo_point_3_3_in_8x8_matrix,
+        single_sample_receiver
     }
 };
 
