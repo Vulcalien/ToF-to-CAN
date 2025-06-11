@@ -31,6 +31,7 @@ static int cmd_help(char *arg0) {
     printf("Usage: %s [command] [args]\n", arg0);
     printf("List of available commands:\n");
     printf("    set-id      sets the sensor ID\n");
+    printf("    debug       toggles debug messages\n");
     printf("    exit        exits the program\n");
     printf("    help        prints this help message\n");
     return 0;
@@ -65,6 +66,8 @@ int main(int argc, char *argv[]) {
             scanf("%d", &id);
 
             can_io_set_sensor_id(id);
+        } else if(!strcmp(cmd, "debug")) {
+            debug_flag = !debug_flag;
         } else if(!strcmp(cmd, "exit")) {
             break;
         } else {
