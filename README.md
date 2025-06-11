@@ -18,7 +18,7 @@ Retrieve all git submodules:
 git submodule update --init --depth=1
 ```
 ### Generating the binary
-Run `make ID=<sensor-id>` to compile the firmware. If the commands fails
+Run `make ID=<sensor-id>` to compile the firmware. If the command fails
 with an error, try running the following commands:
 
 ```sh
