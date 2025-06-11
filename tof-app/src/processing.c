@@ -71,7 +71,6 @@ int processing_init(void) {
 static void dump_data(int16_t *matrix) {
     printf("=== DATA DUMP ===\n");
 
-    printf("ToF Matrix:\n");
     for(int y = bounds.y0; y <= bounds.y1; y++) {
         for(int x = bounds.x0; x <= bounds.x1; x++) {
             const int index = x + y * tof_matrix_width;
@@ -79,8 +78,9 @@ static void dump_data(int16_t *matrix) {
         }
         printf("\n");
     }
+    printf("\n");
 
-    printf("Distance data:");
+    printf("Distance data: ");
     for(int i = 0; i < processing_data_length; i++)
         printf("%d, ", processing_data[i]);
     printf("\n");
