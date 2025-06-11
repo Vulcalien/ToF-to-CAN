@@ -27,10 +27,6 @@
 
 bool debug_flag = false;
 
-static int cmd_set_id(int id) {
-    return can_io_set_sensor_id(id);
-}
-
 static int cmd_help(char *arg0) {
     printf("Usage: %s [command] [args]\n", arg0);
     printf("List of available commands:\n");
@@ -56,7 +52,7 @@ int main(int argc, char *argv[]) {
     if(sensor_id_var) {
         int id;
         sscanf(sensor_id_var, "%d", &id);
-        cmd_set_id(id);
+        can_io_set_sensor_id(id);
     }
 
     cmd_help(arg0);
@@ -68,7 +64,7 @@ int main(int argc, char *argv[]) {
             int id;
             scanf("%d", &id);
 
-            cmd_set_id(id);
+            can_io_set_sensor_id(id);
         } else if(!strcmp(cmd, "exit")) {
             break;
         } else {
