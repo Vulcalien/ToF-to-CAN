@@ -68,6 +68,9 @@ int main(int argc, char *argv[]) {
             can_io_set_sensor_id(id);
         } else if(!strcmp(cmd, "debug")) {
             debug_flag = !debug_flag;
+
+            const char *msg = (debug_flag ? "ENABLED" : "DISABLED");
+            printf("[Main] debug messages %s\n", msg);
         } else if(!strcmp(cmd, "exit")) {
             break;
         } else {
