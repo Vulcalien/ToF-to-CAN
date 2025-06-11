@@ -256,6 +256,9 @@ void processing_pause(void) {
     is_paused = true;
     usleep(10000); // wait 10ms to ensure no data is being processed
     tof_stop_ranging();
+
+    // invalidate data, if it was marked available
+    sem_trywait(&processing_data_available);
 }
 
 void processing_resume(void) {
