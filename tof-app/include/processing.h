@@ -24,37 +24,16 @@
 
 #define PROCESSING_DATA_MAX_LENGTH 64
 
-// TODO it should be very easy to hide all these variables and only
-// expose one function:
-//
-// bool processing_get_data(int16_t *data, int *length,
-//                          bool *threshold_event);
-//
-// This function returns true if data is available, false otherwise.
-//
-// If data is available, the data, length and threshold_event pointers
-// are used to store the results.
-//
-// This function should look like this:
-//   if(trywait(data-available-semaphore))
-//       return false
-//   lock(data-mutex)
-//   copy data to pointers...
-//   unlock(data-mutex)
-//   return true
-extern pthread_mutex_t processing_data_mutex;
-extern sem_t           processing_data_available;
-extern int             processing_data_length;
-
-extern int16_t processing_data[PROCESSING_DATA_MAX_LENGTH];
-extern bool    processing_below_threshold;
-extern bool    processing_threshold_event;
-
 extern int processing_init(void);
 extern int processing_start(void);
 
 extern void processing_pause(void);
 extern void processing_resume(void);
+
+extern int processing_get_data(int16_t *buffer,
+                               int *length,
+                               bool *below_threshold,
+                               bool *threshold_event);
 
 extern int processing_set_mode(int mode);
 extern int processing_set_threshold(int threshold);

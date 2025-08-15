@@ -18,6 +18,7 @@
 #include "processing.h"
 
 #include <stdio.h>
+#include <string.h>
 #include <limits.h>
 #include <unistd.h>
 #include <pthread.h>
@@ -35,13 +36,16 @@
 #define SELECTOR_AVERAGE 2
 #define SELECTOR_ALL     3
 
-pthread_mutex_t processing_data_mutex;
-sem_t           processing_data_available;
-int             processing_data_length;
+static struct {
+    pthread_mutex_t mutex;
+    sem_t           available;
 
-int16_t processing_data[PROCESSING_DATA_MAX_LENGTH];
-bool    processing_below_threshold;
-bool    processing_threshold_event;
+    int     buffer_length;
+    int16_t buffer[PROCESSING_DATA_MAX_LENGTH];
+
+    bool below_threshold;
+    bool threshold_event;
+} data;
 
 static struct {
     int x0, y0, x1, y1;
@@ -55,13 +59,13 @@ static bool is_paused = true; // after startup, device is idle
 
 int processing_init(void) {
     // initialize data mutex
-    if(pthread_mutex_init(&processing_data_mutex, NULL)) {
+    if(pthread_mutex_init(&data.mutex, NULL)) {
         printf("[Processing] error initializing data mutex\n");
         return 1;
     }
 
     // initialize data available semaphore
-    if(sem_init(&processing_data_available, 0, 0)) {
+    if(sem_init(&data.available, 0, 0)) {
         printf("[Processing] error initializing data available semaphore\n");
         return 1;
     }
@@ -81,13 +85,13 @@ static void dump_data(int16_t *matrix) {
     printf("\n");
 
     printf("Distance data: ");
-    for(int i = 0; i < processing_data_length; i++)
-        printf("%d, ", processing_data[i]);
+    for(int i = 0; i < data.buffer_length; i++)
+        printf("%d, ", data.buffer[i]);
     printf("\n");
 
-    if(processing_data_length == 1) {
-        printf("Below threshold: %d\n", processing_below_threshold);
-        printf("Threshold event: %d\n", processing_threshold_event);
+    if(data.buffer_length == 1) {
+        printf("Below threshold: %d\n", data.below_threshold);
+        printf("Threshold event: %d\n", data.threshold_event);
     }
     printf("\n");
 }
@@ -130,7 +134,7 @@ static void update_threshold_status(void) {
     static bool previous    = false;
     static int  consistency = 0;
 
-    const bool current = (processing_data[0] < threshold);
+    const bool current = (data.buffer[0] < threshold);
     if(current == previous)
         consistency++;
     else
@@ -138,19 +142,19 @@ static void update_threshold_status(void) {
     previous = current;
 
     const bool consistent_enough = (consistency >= threshold_delay);
-    const bool status_change = (processing_below_threshold != current);
+    const bool status_change = (data.below_threshold != current);
 
     // if readings are consistent enough, update status and event flag
     if(consistent_enough && status_change) {
-        processing_below_threshold = current;
-        processing_threshold_event = true;
+        data.below_threshold = current;
+        data.threshold_event = true;
     } else {
-        processing_threshold_event = false;
+        data.threshold_event = false;
     }
 
     // update status of LEDs: green=below threshold, red=threshold event
-    board_userled(BOARD_GREEN_LED, processing_below_threshold);
-    board_userled(BOARD_RED_LED,   processing_threshold_event);
+    board_userled(BOARD_GREEN_LED, data.below_threshold);
+    board_userled(BOARD_RED_LED,   data.threshold_event);
 }
 
 static int update_data(void) {
@@ -169,7 +173,7 @@ static int update_data(void) {
     }
 
     // lock data mutex
-    if(pthread_mutex_lock(&processing_data_mutex)) {
+    if(pthread_mutex_lock(&data.mutex)) {
         printf("[Processing] error trying to lock data mutex\n");
         return 1;
     }
@@ -177,15 +181,15 @@ static int update_data(void) {
     // update data based on result selector
     switch(result_selector) {
         case SELECTOR_MIN: {
-            processing_data[0] = min;
+            data.buffer[0] = min;
         } break;
 
         case SELECTOR_MAX: {
-            processing_data[0] = max;
+            data.buffer[0] = max;
         } break;
 
         case SELECTOR_AVERAGE: {
-            processing_data[0] = (sum / count);
+            data.buffer[0] = (sum / count);
         } break;
 
         case SELECTOR_ALL: {
@@ -194,18 +198,18 @@ static int update_data(void) {
             for(int y = bounds.y0; y <= bounds.y1; y++) {
                 for(int x = bounds.x0; x <= bounds.x1; x++) {
                     const int index = x + y * tof_matrix_width;
-                    processing_data[i++] = matrix[index];
+                    data.buffer[i++] = matrix[index];
                 }
             }
         } break;
     }
 
     // if there is only one data value, update threshold status
-    if(processing_data_length == 1)
+    if(data.buffer_length == 1)
         update_threshold_status();
 
     // unlock data mutex
-    if(pthread_mutex_unlock(&processing_data_mutex)) {
+    if(pthread_mutex_unlock(&data.mutex)) {
         printf("[Processing] error trying to unlock data mutex\n");
         return 1;
     }
@@ -225,13 +229,13 @@ static void *processing_run(void *arg) {
         if(!is_paused && update_data() == 0) {
             // get semaphore's current value
             int sem_value;
-            sem_getvalue(&processing_data_available, &sem_value);
+            sem_getvalue(&data.available, &sem_value);
 
             // Since old data is overwritten by new data, the maximum
             // value of the semaphore is 1: only increase its value if
             // the current value is 0.
             if(sem_value == 0)
-                sem_post(&processing_data_available);
+                sem_post(&data.available);
         }
 
         // wait 1ms
@@ -258,7 +262,7 @@ void processing_pause(void) {
     tof_stop_ranging();
 
     // invalidate data, if it was marked available
-    sem_trywait(&processing_data_available);
+    sem_trywait(&data.available);
 }
 
 void processing_resume(void) {
@@ -267,6 +271,34 @@ void processing_resume(void) {
 
     tof_start_ranging();
     is_paused = false;
+}
+
+int processing_get_data(int16_t *buffer,
+                        int *length,
+                        bool *below_threshold,
+                        bool *threshold_event) {
+    // if data is available, consume it, otherwise return an error
+    if(sem_trywait(&data.available))
+        return 1;
+
+    // lock data mutex
+    if(pthread_mutex_lock(&data.mutex)) {
+        printf("[Processing] error trying to lock data mutex\n");
+        return 1;
+    }
+
+    // copy data to the given pointers
+    memcpy(buffer, data.buffer, data.buffer_length * sizeof(int16_t));
+    *length          = data.buffer_length;
+    *below_threshold = data.below_threshold;
+    *threshold_event = data.threshold_event;
+
+    // unlock data mutex
+    if(pthread_mutex_unlock(&data.mutex)) {
+        printf("[Processing] error trying to unlock data mutex\n");
+        return 1;
+    }
+    return 0;
 }
 
 int processing_set_mode(int mode) {
@@ -316,16 +348,16 @@ int processing_set_mode(int mode) {
     if(result_selector == SELECTOR_ALL) {
         const int width  = (bounds.x1 - bounds.x0 + 1);
         const int height = (bounds.y1 - bounds.y0 + 1);
-        processing_data_length = width * height;
+        data.buffer_length = width * height;
     } else {
-        processing_data_length = 1;
+        data.buffer_length = 1;
     }
 
     printf(
         "[Processing] setting area to (%d, %d, %d, %d), "
         "result selector to %d, data length to %d\n",
         bounds.x0, bounds.y0, bounds.x1, bounds.y1,
-        result_selector, processing_data_length
+        result_selector, data.buffer_length
     );
     return 0;
 }

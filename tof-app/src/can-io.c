@@ -246,9 +246,11 @@ static int write_data_packets(int16_t *data, int length) {
     return 0;
 }
 
-static bool should_transmit(bool below_threshold, bool threshold_event) {
+static bool should_transmit(int buffer_length,
+                            bool below_threshold,
+                            bool threshold_event) {
     // if there are multiple data points, ignore transmit condition
-    if(processing_data_length > 1)
+    if(buffer_length > 1)
         return true;
 
     switch(transmit_condition) {
@@ -267,37 +269,27 @@ static bool should_transmit(bool below_threshold, bool threshold_event) {
     return false;
 }
 
-static int retrieve_data(int16_t *data, bool *below_threshold) {
-    bool data_ready = false;
-    while(!data_ready) {
-        // wait for data to become available
-        while(sem_trywait(&processing_data_available)) {
+static int retrieve_data(int16_t *buffer, int *length,
+                         bool *below_threshold) {
+    while(true) {
+        // if sender was paused while waiting, do not retrieve data
+        if(is_sender_paused)
+            return 1;
+
+        bool threshold_event;
+        int err = processing_get_data(
+            buffer, length, below_threshold, &threshold_event
+        );
+
+        // if data was not available, wait some time and try again
+        if(err) {
             usleep(1000); // wait 1ms
-
-            // if sender was paused while waiting, do not retrieve data
-            if(is_sender_paused)
-                return 1;
-        }
-
-        // lock data mutex
-        if(pthread_mutex_lock(&processing_data_mutex)) {
-            printf("[CAN-IO] error trying to lock data mutex\n");
             continue;
         }
 
-        // copy data from processing module
-        memcpy(data, processing_data, processing_data_length * sizeof(int16_t));
-        *below_threshold = processing_below_threshold;
-        const bool threshold_event = processing_threshold_event;
-
-        // unlock data mutex
-        if(pthread_mutex_unlock(&processing_data_mutex)) {
-            printf("[CAN-IO] error trying to unlock data mutex\n");
-            continue;
-        }
-
-        // check if data is ready to be sent
-        data_ready = should_transmit(*below_threshold, threshold_event);
+        // if data should be transmitted, break the loop
+        if(should_transmit(*length, *below_threshold, threshold_event))
+            break;
     }
     return 0;
 }
@@ -305,7 +297,8 @@ static int retrieve_data(int16_t *data, bool *below_threshold) {
 static void *sender_run(void *arg) {
     printf("[CAN-IO] sender thread started\n");
 
-    static int16_t data[PROCESSING_DATA_MAX_LENGTH];
+    static int16_t buffer[PROCESSING_DATA_MAX_LENGTH];
+    int buffer_length;
     bool below_threshold;
 
     while(true) {
@@ -314,14 +307,14 @@ static void *sender_run(void *arg) {
             sem_wait(&request_data_message);
 
         // retrieve data; on failure, drop the request
-        if(retrieve_data(data, &below_threshold))
+        if(retrieve_data(buffer, &buffer_length, &below_threshold))
             continue;
 
         // send CAN message(s)
-        if(processing_data_length == 1)
-            write_single_sample(data[0], below_threshold);
+        if(buffer_length == 1)
+            write_single_sample(buffer[0], below_threshold);
         else
-            write_data_packets(data, processing_data_length);
+            write_data_packets(buffer, buffer_length);
     }
     return NULL;
 }
