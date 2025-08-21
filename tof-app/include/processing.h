@@ -19,9 +19,6 @@
 
 #include "main.h"
 
-#include <pthread.h>
-#include <semaphore.h>
-
 #define PROCESSING_DATA_MAX_LENGTH 64
 
 extern int processing_init(void);
