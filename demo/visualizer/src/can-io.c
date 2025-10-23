@@ -201,6 +201,87 @@ static void data_packets_receiver(void) {
     }
 }
 
+static void config_sensor(struct distance_sensor_can_config *config) {
+    const char *result_selector = "?";
+    switch((config->processing_mode >> 4) & 3) {
+        case 0:
+            result_selector = "min";
+            break;
+        case 1:
+            result_selector = "max";
+            break;
+        case 2:
+            result_selector = "average";
+            break;
+        case 3:
+            result_selector = "all points";
+            break;
+    }
+
+    char mode_str[256] = { 0 };
+    switch((config->processing_mode >> 6) & 3) {
+        case 0:
+            snprintf(mode_str, 256, "%s in matrix", result_selector);
+            break;
+        case 1:
+            snprintf(
+                mode_str, 256,
+                "%s in column n. %d",
+                result_selector, config->processing_mode & 7
+            );
+            break;
+        case 2:
+            snprintf(
+                mode_str, 256,
+                "%s in row n. %d",
+                result_selector, config->processing_mode & 7
+            );
+            break;
+        case 3:
+            snprintf(
+                mode_str, 256,
+                "point at x=%d, y=%d",
+                config->processing_mode & 7,
+                (config->processing_mode >> 3) & 7
+            );
+            break;
+    }
+
+    const char *timing = (
+        config->transmit_timing ? "continuous" : "on-demand"
+    );
+
+    const char *condition = "?";
+    switch(config->transmit_condition) {
+        case 0:
+            condition = "always true";
+            break;
+        case 1:
+            condition = "below threshold event";
+            break;
+        case 2:
+            condition = "above threshold event";
+            break;
+        case 3:
+            condition = "any threshold event";
+            break;
+    }
+
+    printf("[Sender] configuring distance sensor:\n");
+    printf("  resolution: %d points\n", config->resolution);
+    printf("  frequency: %d Hz\n", config->frequency);
+    printf("  processing mode: %s\n", mode_str);
+    printf("  threshold: %d mm\n", config->threshold);
+    printf("  threshold delay: %d\n", config->threshold_delay);
+    printf("  transmit timing: %s\n", timing);
+    printf("  transmit condition: %s\n", condition);
+
+    can_write(
+        DISTANCE_SENSOR_CAN_CONFIG_MASK_ID,
+        config,
+        DISTANCE_SENSOR_CAN_CONFIG_SIZE
+    );
+}
 
 void *can_io_start(void *arg) {
     if(can_open("can0")) {
@@ -209,6 +290,21 @@ void *can_io_start(void *arg) {
     }
 
     pthread_mutex_init(&batch_queue.mutex, NULL);
+
+
+    struct distance_sensor_can_config config = {
+        .resolution = 64, // 8x8
+        .frequency  = 5, // 5 Hz
+        .sharpener  = 5,
+
+        .processing_mode = 0x30, // all points in matrix
+        .threshold       = 0, // ignored
+        .threshold_delay = 0, // ignored
+
+        .transmit_timing    = 1, // continuous
+        .transmit_condition = 0, // ignored (multiple samples)
+    };
+    config_sensor(&config);
 
     data_packets_receiver();
     return NULL;
