@@ -33,8 +33,11 @@ int main(int argc, char *argv[]) {
 
     while(!display_tick()) {
         struct DataBatch batch;
-        if(can_io_get_data(&batch))
+        if(can_io_get_data(&batch)) {
+            // sleep 2 ms before trying again
+            nanosleep(&(struct timespec) { .tv_nsec = 2000000 }, NULL);
             continue;
+        }
 
         // calculate colors
         int32_t colors[64];

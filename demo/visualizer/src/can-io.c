@@ -291,7 +291,6 @@ void *can_io_start(void *arg) {
 
     pthread_mutex_init(&batch_queue.mutex, NULL);
 
-
     struct distance_sensor_can_config config = {
         .resolution = 64, // 8x8
         .frequency  = 5, // 5 Hz
