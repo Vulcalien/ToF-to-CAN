@@ -39,7 +39,8 @@ int main(int argc, char *argv[]) {
         // calculate colors
         int32_t colors[64];
         for(int i = 0; i < 64; i++) {
-            colors[i] = batch.data[i]; // TODO
+            int gray = (255 * batch.data[i] / 4000);
+            colors[i] = gray << 16 | gray << 8 | gray;
         }
 
         display_update(batch.data, colors);
