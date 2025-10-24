@@ -1,12 +1,11 @@
-# ToF-to-CAN: a CAN interface for the VL53L5CX Time-of-Flight sensor
+# ToF-to-CAN
+
 This firmware offers a CAN interface for the
 [VL53L5CX](https://www.st.com/en/imaging-and-photonics-solutions/vl53l5cx.html)
 Time-of-Flight (ToF) sensor, controlled via *I2C* by a
 [STM32L432KC](https://www.st.com/en/microcontrollers-microprocessors/stm32l432kc.html)
-microcontroller.
-
-The project is built on top of the [NuttX](https://nuttx.apache.org/)
-embedded operating system.
+microcontroller. The project is built on top of the
+[NuttX](https://nuttx.apache.org/) embedded operating system.
 
 ## Building
 ### Installing dependencies
