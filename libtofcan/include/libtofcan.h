@@ -18,61 +18,54 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-struct tofcan_sample {
-    int16_t distance;
-    bool below_threshold;
-}
+#include "distance-sensor.h"
 
-struct tofcan_batch {
+struct libtofcan_batch {
     int16_t data[64];
     int data_length;
+
     int batch_id;
+    int packets_received;
+    int packets_expected;
 };
 
-struct tofcan_driver {
-    int (*init)(void);
-    int (*read)(uint32_t *id, bool *rtr, void *data, int *len);
-    int (*write)(uint32_t id, bool rtr, void *data, int len);
+/*
+ * Description of a CAN message.
+ */
+struct libtofcan_msg {
+    uint32_t id;
+    bool     rtr;
+    void    *data;
+    int      len;
 };
 
-extern const struct tofcan_driver_linux;
-extern const struct tofcan_driver_nuttx;
-
 /*
- * int tofcan_init(const struct tofcan_driver *driver)
- *
- * Initialize the library and select the specified CAN driver.
- */
-extern int tofcan_init(const struct tofcan_driver *driver);
-
-/*
- * void tofcan_request_sample(int sensor_id)
- *
- * Requests a sample or data batch from the specified sensor.
- */
-extern void tofcan_request_sample(int sensor_id);
-
-/*
- * void *tofcan_receiver(void *)
- *
- * Main function of the receiver thread. This function never returns.
- * When a sample or data batch is received, the configured callback
- * functions are called.
- */
-extern void *tofcan_receiver(void *);
-
-/*
- * void tofcan_set_callbacks(int (*sample)(...), int (*batch)(...))
- *
  * Sets the callback functions that are called when the receiver obtains
- * a sample or full data batch. If a callback function is NULL, no
- * action is performed.
+ * a sample or full data batch.
  *
  * Note that the data pointer's lifetime expires when the callback
  * function returns. DO NOT dereference the pointer outside the callback
  * function's scope. Copy the data instead.
  */
-extern void tofcan_set_callbacks(
-    int (*sample)(int sensor_id, struct tofcan_sample *data),
-    int (*batch) (int sensor_id, struct tofcan_batch  *data)
+extern void libtofcan_set_callbacks(
+    int (*sample)(int sensor_id, struct distance_sensor_can_sample *data),
+    int (*batch)(int sensor_id, struct libtofcan_batch *data, bool valid)
 );
+
+/*
+ * Prepares a CAN message to configure the sensor with the specified ID.
+ */
+extern void libtofcan_config(int sensor_id, struct libtofcan_msg *msg,
+                             struct distance_sensor_can_config *config);
+
+/*
+ * Prepares a CAN message to request a sample or data batch from the
+ * sensor with the specified ID.
+ */
+extern void libtofcan_request(int sensor_id, struct libtofcan_msg *msg);
+
+/*
+ * Handles a CAN message coming from a ToF sensor. If the message does
+ * not come from a ToF sensor, no action is performed.
+ */
+extern void libtofcan_receive(const struct libtofcan_msg *msg);

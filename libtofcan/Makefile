@@ -19,7 +19,7 @@ SRC_SUBDIRS :=
 #                             Compilation                              #
 # ==================================================================== #
 
-CPPFLAGS := -Iinclude -MMD -MP
+CPPFLAGS := -Iinclude -I../include -MMD -MP
 
 CFLAGS_STATIC := -Wall -pedantic
 CFLAGS_SHARED := -Wall -pedantic -fPIC -fvisibility=hidden
