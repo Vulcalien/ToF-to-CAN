@@ -1,0 +1,6 @@
+# binary
+/obj
+/bin
+
+# converted manpages
+/doc/out
