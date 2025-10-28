@@ -48,21 +48,21 @@ struct libtofcan_msg {
  * function's scope. Copy the data instead.
  */
 extern void libtofcan_set_callbacks(
-    int (*sample)(int sensor_id, struct distance_sensor_can_sample *data),
-    int (*batch)(int sensor_id, struct libtofcan_batch *data, bool valid)
+    void (*sample)(int sensor, struct distance_sensor_can_sample *data),
+    void (*batch)(int sensor, struct libtofcan_batch *data, bool valid)
 );
 
 /*
  * Prepares a CAN message to configure the sensor with the specified ID.
  */
-extern void libtofcan_config(int sensor_id, struct libtofcan_msg *msg,
+extern void libtofcan_config(int sensor, struct libtofcan_msg *msg,
                              struct distance_sensor_can_config *config);
 
 /*
  * Prepares a CAN message to request a sample or data batch from the
  * sensor with the specified ID.
  */
-extern void libtofcan_request(int sensor_id, struct libtofcan_msg *msg);
+extern void libtofcan_request(int sensor, struct libtofcan_msg *msg);
 
 /*
  * Handles a CAN message coming from a ToF sensor. If the message does
