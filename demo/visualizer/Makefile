@@ -19,7 +19,7 @@ SRC_SUBDIRS :=
 #                             Compilation                              #
 # ==================================================================== #
 
-CPPFLAGS := -Iinclude -I../../include -MMD -MP
+CPPFLAGS := -Iinclude -I../../include -I../../libtofcan/include -MMD -MP
 CFLAGS   := -Wall -pedantic
 
 ASFLAGS :=
@@ -35,6 +35,9 @@ ifeq ($(TARGET),UNIX)
 
     LDFLAGS := `pkg-config --libs-only-L $(LIBS)`
     LDLIBS  := `pkg-config --libs-only-l $(LIBS)`
+
+    LDFLAGS += -L../../libtofcan/bin
+    LDLIBS  += -l:libtofcan.a
 else ifeq ($(TARGET),WINDOWS)
     CC := x86_64-w64-mingw32-gcc
     AS := x86_64-w64-mingw32-as
@@ -89,7 +92,7 @@ OUT := $(BIN_DIR)/$(OUT_FILENAME)$(OUT_SUFFIX)
 
 .PHONY: all run build clean
 
-all: build
+all: build-deps build
 
 run:
 	./$(OUT)
@@ -114,5 +117,9 @@ $(OBJ_DIR)/%.s.$(OBJ_EXT): %.s | $(OBJ_DIRS)
 # create directories
 $(BIN_DIR) $(OBJ_DIRS):
 	$(MKDIR) "$@"
+
+.PHONY: build-deps
+build-deps:
+	$(MAKE) -C ../../libtofcan build-static
 
 -include $(OBJ:.$(OBJ_EXT)=.d)

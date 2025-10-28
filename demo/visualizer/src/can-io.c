@@ -28,6 +28,7 @@
 
 #include <linux/can.h>
 
+#include "libtofcan.h"
 #include "distance-sensor.h"
 
 static int sockfd;
@@ -84,70 +85,13 @@ static int can_read(uint32_t *can_id, void *data) {
     return len;
 }
 
-static void batch_reset(struct DataBatch *batch,
-                        int sensor_id, int batch_id) {
-    // check if the previous batch was interrupted
-    if(batch->packets_received != batch->packets_expected) {
-        printf(
-            "[Receiver] batch interrupted before receiving all packets "
-            "(sensor=%d, batch=%d, received only %d)\n",
-            sensor_id, batch->batch_id, batch->packets_received
-        );
-    }
-
-    batch->data_length      = 0;
-    batch->batch_id         = batch_id;
-    batch->packets_received = 0;
-    batch->packets_expected = 0;
-}
-
-static void batch_insert(struct DataBatch *batch, int sensor_id,
-                         struct distance_sensor_can_data_packet *packet) {
-    const int buffer_length = sizeof(batch->data) / sizeof(int16_t);
-    const int offset = packet->sequence_number * 3;
-
-    // check if packet data would overflow the buffer
-    if(offset + packet->data_length > buffer_length) {
-        printf(
-            "[Receiver] received packet that would overflow buffer "
-            "(sensor=%d, seq_number=%d, data_len=%d)\n",
-            sensor_id, packet->sequence_number, packet->data_length
-        );
-        return;
-    }
-
-    // copy packet data into buffer
-    batch->packets_received++;
-    batch->data_length += packet->data_length;
-    memcpy(
-        &batch->data[offset],
-        &packet->data,
-        packet->data_length * sizeof(int16_t)
-    );
-
-    // if packet is last of batch, set count of expected packets
-    if(packet->last_of_batch)
-        batch->packets_expected = 1 + packet->sequence_number;
-}
-
-static void batch_print(struct DataBatch *batch, int sensor_id) {
-    const int line_length = (batch->data_length == 16 ? 4 : 8);
-
-    printf("[Receiver] received samples (sensor=%d):\n", sensor_id);
-    for(int i = 0; i < batch->data_length; i++) {
-        if(i % line_length == 0) {
-            if(i != 0)
-                printf("\n");
-            printf("  ");
-        }
-        printf("%d, ", batch->data[i]);
-    }
-    printf("\n");
+static void callback_sample(int sensor, struct distance_sensor_can_sample *data) {
+    // nothing to do
 }
 
 #define QUEUE_SIZE 8
 static struct {
-    struct DataBatch batches[QUEUE_SIZE];
+    struct libtofcan_batch batches[QUEUE_SIZE];
     int head;
     int tail;
     int count;
@@ -155,132 +99,40 @@ static struct {
     pthread_mutex_t mutex;
 } batch_queue;
 
-static void data_packets_receiver(void) {
-    static struct DataBatch batches[DISTANCE_SENSOR_MAX_COUNT];
+static void callback_batch(int sensor, struct libtofcan_batch *data, bool valid) {
+    // if batch is not valid, write an error
+    if(!valid) {
+        printf(
+            "[Receiver] batch interrupted before receiving all packets "
+            "(sensor=%d, batch=%d, received only %d)\n",
+            sensor, data->batch_id, data->packets_received
+        );
+        return;
+    }
 
-    while(1) {
-        uint32_t can_id;
-        uint8_t data[8];
-        can_read(&can_id, data);
-
-        if(can_id & RTR_BIT)
-            continue;
-
-        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
-        const int msg_type  = can_id - sensor_id;
-
-        if(msg_type == DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID) {
-            struct distance_sensor_can_data_packet packet;
-            memcpy(&packet, data, sizeof(packet));
-
-            struct DataBatch *batch = &batches[sensor_id];
-
-            // if packet has a new batch ID, reset the batch buffer
-            if(batch->batch_id != packet.batch_id)
-                batch_reset(batch, sensor_id, packet.batch_id);
-
-            // insert new data into the batch buffer
-            batch_insert(batch, sensor_id, &packet);
-
-            // if all packets have been received, print the batch
-            if(batch->packets_received == batch->packets_expected) {
-                batch_print(batch, sensor_id);
-
-                // insert batch into queue
-                pthread_mutex_lock(&batch_queue.mutex);
-                memcpy(
-                    &batch_queue.batches[batch_queue.head],
-                    batch, sizeof(struct DataBatch)
-                );
-                batch_queue.head = (batch_queue.head + 1) % QUEUE_SIZE;
-                if(batch_queue.count < QUEUE_SIZE)
-                    batch_queue.count++;
-                pthread_mutex_unlock(&batch_queue.mutex);
-            }
+    // print batch
+    const int line_length = (data->data_length == 16 ? 4 : 8);
+    printf("[Receiver] received samples (sensor=%d):\n", sensor);
+    for(int i = 0; i < data->data_length; i++) {
+        if(i % line_length == 0) {
+            if(i != 0)
+                printf("\n");
+            printf("  ");
         }
+        printf("%d, ", data->data[i]);
     }
-}
+    printf("\n");
 
-static void config_sensor(struct distance_sensor_can_config *config) {
-    const char *result_selector = "?";
-    switch((config->processing_mode >> 4) & 3) {
-        case 0:
-            result_selector = "min";
-            break;
-        case 1:
-            result_selector = "max";
-            break;
-        case 2:
-            result_selector = "average";
-            break;
-        case 3:
-            result_selector = "all points";
-            break;
-    }
-
-    char mode_str[256] = { 0 };
-    switch((config->processing_mode >> 6) & 3) {
-        case 0:
-            snprintf(mode_str, 256, "%s in matrix", result_selector);
-            break;
-        case 1:
-            snprintf(
-                mode_str, 256,
-                "%s in column n. %d",
-                result_selector, config->processing_mode & 7
-            );
-            break;
-        case 2:
-            snprintf(
-                mode_str, 256,
-                "%s in row n. %d",
-                result_selector, config->processing_mode & 7
-            );
-            break;
-        case 3:
-            snprintf(
-                mode_str, 256,
-                "point at x=%d, y=%d",
-                config->processing_mode & 7,
-                (config->processing_mode >> 3) & 7
-            );
-            break;
-    }
-
-    const char *timing = (
-        config->transmit_timing ? "continuous" : "on-demand"
+    // insert batch into queue
+    pthread_mutex_lock(&batch_queue.mutex);
+    memcpy(
+        &batch_queue.batches[batch_queue.head],
+        data, sizeof(struct libtofcan_batch)
     );
-
-    const char *condition = "?";
-    switch(config->transmit_condition) {
-        case 0:
-            condition = "always true";
-            break;
-        case 1:
-            condition = "below threshold event";
-            break;
-        case 2:
-            condition = "above threshold event";
-            break;
-        case 3:
-            condition = "any threshold event";
-            break;
-    }
-
-    printf("[Sender] configuring distance sensor:\n");
-    printf("  resolution: %d points\n", config->resolution);
-    printf("  frequency: %d Hz\n", config->frequency);
-    printf("  processing mode: %s\n", mode_str);
-    printf("  threshold: %d mm\n", config->threshold);
-    printf("  threshold delay: %d\n", config->threshold_delay);
-    printf("  transmit timing: %s\n", timing);
-    printf("  transmit condition: %s\n", condition);
-
-    can_write(
-        DISTANCE_SENSOR_CAN_CONFIG_MASK_ID,
-        config,
-        DISTANCE_SENSOR_CAN_CONFIG_SIZE
-    );
+    batch_queue.head = (batch_queue.head + 1) % QUEUE_SIZE;
+    if(batch_queue.count < QUEUE_SIZE)
+        batch_queue.count++;
+    pthread_mutex_unlock(&batch_queue.mutex);
 }
 
 void *can_io_start(void *arg) {
@@ -291,7 +143,9 @@ void *can_io_start(void *arg) {
 
     pthread_mutex_init(&batch_queue.mutex, NULL);
 
-    struct distance_sensor_can_config config = {
+    // configure sensor
+    struct libtofcan_msg msg;
+    libtofcan_config(0, &msg, &(struct distance_sensor_can_config) {
         .resolution = 64, // 8x8
         .frequency  = 5, // 5 Hz
         .sharpener  = 5,
@@ -302,14 +156,29 @@ void *can_io_start(void *arg) {
 
         .transmit_timing    = 1, // continuous
         .transmit_condition = 0, // ignored (multiple samples)
-    };
-    config_sensor(&config);
+    });
+    can_write(msg.id, msg.data, msg.len);
 
-    data_packets_receiver();
+    libtofcan_set_callbacks(callback_sample, callback_batch);
+    while(1) {
+        uint32_t can_id;
+        uint8_t data[8];
+        int len = can_read(&can_id, data);
+
+        if(len < 0)
+            continue;
+
+        libtofcan_receive(&(struct libtofcan_msg) {
+            .id   = can_id & ~RTR_BIT,
+            .rtr  = can_id & RTR_BIT,
+            .data = data,
+            .len  = len
+        });
+    }
     return NULL;
 }
 
-int can_io_get_data(struct DataBatch *batch) {
+int can_io_get_data(struct libtofcan_batch *batch) {
     int err = 0;
     pthread_mutex_lock(&batch_queue.mutex);
 
@@ -322,7 +191,7 @@ int can_io_get_data(struct DataBatch *batch) {
     memcpy(
         batch,
         &batch_queue.batches[batch_queue.tail],
-        sizeof(struct DataBatch)
+        sizeof(struct libtofcan_batch)
     );
     batch_queue.tail = (batch_queue.tail + 1) % QUEUE_SIZE;
     batch_queue.count--;

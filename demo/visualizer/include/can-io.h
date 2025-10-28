@@ -17,15 +17,8 @@
 
 #include "visualizer.h"
 
-struct DataBatch {
-    int16_t data[64];
-    int data_length;
-
-    int batch_id;
-    int packets_received;
-    int packets_expected;
-};
+#include "libtofcan.h"
 
 extern void *can_io_start(void *arg);
 
-extern int can_io_get_data(struct DataBatch *batch);
+extern int can_io_get_data(struct libtofcan_batch *batch);

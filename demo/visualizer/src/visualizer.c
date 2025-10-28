@@ -19,6 +19,7 @@
 
 #include <pthread.h>
 
+#include "libtofcan.h"
 #include "can-io.h"
 #include "display.h"
 
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
     pthread_create(&can_io_thread, NULL, can_io_start, NULL);
 
     while(!display_tick()) {
-        struct DataBatch batch;
+        struct libtofcan_batch batch;
         if(can_io_get_data(&batch)) {
             // sleep 2 ms before trying again
             nanosleep(&(struct timespec) { .tv_nsec = 2000000 }, NULL);
