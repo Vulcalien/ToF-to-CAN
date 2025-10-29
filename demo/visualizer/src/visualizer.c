@@ -40,10 +40,21 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        // get min and max distances
+        int min = batch.data[0];
+        int max = min;
+        for(int i = 1; i < 64; i++) {
+            int point = batch.data[i];
+            if(min > point)
+                min = point;
+            if(max < point)
+                max = point;
+        }
+
         // calculate colors
         int32_t colors[64];
         for(int i = 0; i < 64; i++) {
-            int gray = (255 * batch.data[i] / 4000);
+            int gray = 255 - (255 * (batch.data[i] - min) / max);
             colors[i] = gray << 16 | gray << 8 | gray;
         }
 
