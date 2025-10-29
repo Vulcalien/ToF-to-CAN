@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "distance-sensor.h"
 
@@ -149,4 +150,72 @@ void libtofcan_receive(const struct libtofcan_msg *msg) {
             handle_data_packet(sensor, msg->data, msg->len);
             break;
     }
+}
+
+/* ================================================================== */
+/*                           config_string                            */
+/* ================================================================== */
+
+void libtofcan_config_string(struct distance_sensor_can_config *config,
+                             char *str, int maxlen) {
+    int result = (config->processing_mode >> 4) & 3;
+    const char *result_str = (const char *[]) {
+        "min", "max", "average", "all points"
+    }[result];
+
+    char mode_str[64] = { 0 };
+    int area = (config->processing_mode >> 6) & 3;
+    switch(area) {
+        case 0:
+            snprintf(
+                mode_str, sizeof(mode_str),
+                "%s in matrix", result_str
+            );
+            break;
+        case 1:
+            snprintf(
+                mode_str, sizeof(mode_str),
+                "%s in column n. %d", result_str,
+                config->processing_mode & 7
+            );
+            break;
+        case 2:
+            snprintf(
+                mode_str, sizeof(mode_str),
+                "%s in row n. %d", result_str,
+                config->processing_mode & 7
+            );
+            break;
+        case 3:
+            snprintf(
+                mode_str, sizeof(mode_str),
+                "point at x=%d y=%d",
+                config->processing_mode & 7,
+                (config->processing_mode >> 3) & 7
+            );
+            break;
+    }
+
+    const char *timing_str = (const char *[]) {
+        "on-demand", "continuous"
+    }[config->transmit_timing & 1];
+
+    const char *condition_str = (const char *[]) {
+        "always true", "below threshold event",
+        "above threshold event", "any threshold event"
+    }[config->transmit_condition & 3];
+
+    printf("-> %d\n\n", snprintf(
+        str, maxlen,
+        "resolution: %d points\n"
+        "frequency: %d Hz\n"
+        "processing mode: %s\n"
+        "threshold: %d mm\n"
+        "threshold delay: %d\n"
+        "transmit timing: %s\n"
+        "transmit condition: %s",
+        config->resolution, config->frequency, mode_str,
+        config->threshold, config->threshold_delay,
+        timing_str, condition_str
+    ));
 }

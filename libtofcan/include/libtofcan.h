@@ -69,3 +69,12 @@ extern void libtofcan_request(int sensor, struct libtofcan_msg *msg);
  * not come from a ToF sensor, no action is performed.
  */
 extern void libtofcan_receive(const struct libtofcan_msg *msg);
+
+/*
+ * Generates a human-readable string describing the given configuration.
+ * The string's maximum length should be at least 256.
+ */
+extern void libtofcan_config_string(
+    struct distance_sensor_can_config *config,
+    char *str, int maxlen
+);
