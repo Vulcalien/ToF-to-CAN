@@ -35,17 +35,21 @@ TODO
 ## Examples
 The `demo` directory contains examples of how to use the interface.
 
-If the computer is able to connect to the sensor via CAN bus, the
-following commands can be used to run the demos:
+If the computer is able to connect to the sensor via CAN bus, run the
+following commands to configure the CAN interface:
 
 ```sh
 cd demo
 sudo ./can-config.sh
-make
 ```
 
-After selecting which demo to run, press the Enter key to request data
-from the sensor. Use *ctrl^C* to quit the demo.
+Then, choose which demo to run by moving into its directory. Run these
+commands to execute a demo:
+
+```sh
+make
+make run
+```
 
 ## License
 The source code of the application, contained in the `tof-app`
