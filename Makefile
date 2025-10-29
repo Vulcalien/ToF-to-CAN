@@ -1,13 +1,10 @@
-.PHONY: all demo clean distclean genromfs program reset qconfig
+.PHONY: all clean distclean genromfs program reset qconfig
 
 ROMFS := config/include/romfs.h
 RCS   := etc/init.d/rcS
 
 all: submodules/nuttx/.config genromfs
 	cd submodules/nuttx && $(MAKE) all && arm-none-eabi-size nuttx
-
-demo:
-	$(MAKE) -C demo
 
 clean: submodules/apps/tof-app
 	$(MAKE) -C submodules/nuttx clean
