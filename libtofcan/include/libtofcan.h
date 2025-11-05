@@ -40,8 +40,9 @@ struct libtofcan_msg {
 };
 
 /*
- * Sets the callback functions that are called when the receiver obtains
- * a sample or full data batch.
+ * Sets the callback functions to be called when the receiver obtains a
+ * sample or data batch. If the corresponding callback function is NULL,
+ * data will instead be discarded.
  *
  * Note that the data pointer's lifetime expires when the callback
  * function returns. DO NOT dereference the pointer outside the callback

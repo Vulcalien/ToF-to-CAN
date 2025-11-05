@@ -64,6 +64,18 @@ void libtofcan_request(int sensor, struct libtofcan_msg *msg) {
 /*                              receiver                              */
 /* ================================================================== */
 
+static void publish_sample(int sensor,
+                           struct distance_sensor_can_sample *data) {
+    if(callbacks.sample)
+        callbacks.sample(sensor, data);
+}
+
+static void publish_batch(int sensor, struct libtofcan_batch *data,
+                          bool valid) {
+    if(callbacks.batch)
+        callbacks.batch(sensor, data, valid);
+}
+
 static void handle_sample(int sensor, void *data, int len) {
     // check if message size is correct
     if(len != sizeof(struct distance_sensor_can_sample))
@@ -72,14 +84,14 @@ static void handle_sample(int sensor, void *data, int len) {
     struct distance_sensor_can_sample sample;
     memcpy(&sample, data, sizeof(sample));
 
-    callbacks.sample(sensor, &sample);
+    publish_sample(sensor, &sample);
 }
 
 static void batch_reset(struct libtofcan_batch *batch,
                         int sensor, int batch_id) {
     // if previous batch was interrupted, send it as invalid
     if(batch->packets_received != batch->packets_expected)
-        callbacks.batch(sensor, batch, false);
+        publish_batch(sensor, batch, false);
 
     batch->data_length      = 0;
     batch->batch_id         = batch_id;
@@ -130,7 +142,7 @@ static void handle_data_packet(int sensor, void *data, int len) {
 
     // if all packets have been received, send the batch
     if(batch->packets_received == batch->packets_expected)
-        callbacks.batch(sensor, batch, true);
+        publish_batch(sensor, batch, true);
 }
 
 void libtofcan_receive(const struct libtofcan_msg *msg) {
