@@ -76,7 +76,9 @@ void libtofcan_ring_insert(struct libtofcan_ring *ring,
     for(int i = 0; i < batch->data_length; i++) {
         struct Polar input = {
             .angle = angle_of_point(i, batch->data_length),
-            .distance = batch->data[i]
+
+            // take samples in reverse order to compensate for mirroring
+            .distance = batch->data[batch->data_length - 1 - i]
         };
 
         struct Polar point;
