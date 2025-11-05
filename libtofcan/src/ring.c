@@ -43,15 +43,13 @@ static double angle_of_point(int index, int count) {
 
 static void get_absolute_polar(struct Polar *result,
                                const struct Polar *input,
-                               int sensor_x, int sensor_y,
-                               double sensor_angle) {
+                               int ring_radius, double sensor_angle) {
     // convert input from polar to cartesian
-    int x = input->distance * cos(input->angle) + 0.5;
-    int y = input->distance * sin(input->angle) + 0.5;
+    double x = input->distance * cos(input->angle);
+    double y = input->distance * sin(input->angle);
 
-    // add sensor origin
-    x += sensor_x;
-    y += sensor_y;
+    // add ring radius
+    x += ring_radius;
 
     // convert back to polar
     result->angle = atan2(y, x);
@@ -68,9 +66,6 @@ static void get_absolute_polar(struct Polar *result,
 void libtofcan_ring_insert(struct libtofcan_ring *ring,
                            const struct libtofcan_batch *batch,
                            double angle) {
-    const int x0 = ring->radius * cos(angle) + 0.5;
-    const int y0 = ring->radius * sin(angle) + 0.5;
-
     double angle_per_cell = (2 * M_PI) / ring->diagram_size;
 
     for(int i = 0; i < batch->data_length; i++) {
@@ -82,10 +77,7 @@ void libtofcan_ring_insert(struct libtofcan_ring *ring,
         };
 
         struct Polar point;
-        get_absolute_polar(
-            &point, &input,
-            x0, y0, angle
-        );
+        get_absolute_polar(&point, &input, ring->radius, angle);
 
         int diagram_index = point.angle / angle_per_cell;
         int16_t *diagram_cell = &ring->diagram[diagram_index];
