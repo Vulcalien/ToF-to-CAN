@@ -59,8 +59,10 @@ static void get_absolute_polar(struct Polar *result,
     result->angle += sensor_angle;
 
     // normalize angle in [0, 2 PI)
-    if(result->angle < 0)
+    while(result->angle < 0)
         result->angle += 2 * M_PI;
+    while(result->angle >= 2 * M_PI)
+        result->angle -= 2 * M_PI;
 }
 
 void libtofcan_ring_insert(struct libtofcan_ring *ring,
