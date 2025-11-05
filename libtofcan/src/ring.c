@@ -44,7 +44,7 @@ static double angle_of_point(int index, int count) {
 static void get_absolute_polar(struct Polar *result,
                                const struct Polar *input,
                                int sensor_x, int sensor_y,
-                               int sensor_angle) {
+                               double sensor_angle) {
     // convert input from polar to cartesian
     int x = input->distance * cos(input->angle) + 0.5;
     int y = input->distance * sin(input->angle) + 0.5;
