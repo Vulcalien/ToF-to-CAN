@@ -8,7 +8,7 @@ MODULE = "tof_app"
 CSRCS   = $(wildcard src/*.c)
 MAINSRC = src/main.c
 
-CFLAGS += -Iinclude -I../include
+CFLAGS += -Iinclude -I../../include
 
 # vl53l5cx library
 CSRCS  += $(wildcard lib/vl53l5cx/src/*.c)
