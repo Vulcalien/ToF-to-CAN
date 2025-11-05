@@ -36,6 +36,11 @@ struct Polar {
     int distance;
 };
 
+static double angle_of_point(int index, int count) {
+    double normalized = (double) index / (count - 1); // [0, 1]
+    return (normalized - 0.5) * M_PI_4; // [-22.5, +22.5] degrees
+}
+
 static void get_absolute_polar(struct Polar *result,
                                const struct Polar *input,
                                int sensor_x, int sensor_y,
@@ -66,12 +71,11 @@ void libtofcan_ring_insert(struct libtofcan_ring *ring,
     const int x0 = ring->radius * cos(angle) + 0.5;
     const int y0 = ring->radius * sin(angle) + 0.5;
 
-    double angle_per_sample = M_PI_4 / batch->data_length;
     double angle_per_cell = (2 * M_PI) / ring->diagram_size;
 
     for(int i = 0; i < batch->data_length; i++) {
         struct Polar input = {
-            .angle = (i + 0.5) * angle_per_sample - M_PI_4 / 2,
+            .angle = angle_of_point(i, batch->data_length),
             .distance = batch->data[i]
         };
 
