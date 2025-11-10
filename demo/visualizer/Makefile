@@ -37,7 +37,7 @@ ifeq ($(TARGET),UNIX)
     LDLIBS  := `pkg-config --libs-only-l $(LIBS)`
 
     LDFLAGS += -L../../libtofcan/bin
-    LDLIBS  += -l:libtofcan.a
+    LDLIBS  += -l:libtofcan.a -lm
 else ifeq ($(TARGET),WINDOWS)
     CC := x86_64-w64-mingw32-gcc
     AS := x86_64-w64-mingw32-as
