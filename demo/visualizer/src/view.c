@@ -13,12 +13,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-#pragma once
+#include "view.h"
 
-#include "visualizer.h"
+const struct View *view;
 
-#include "libtofcan.h"
-
-extern void *can_io_start(void *arg);
-
-extern int can_io_get_data(int *sensor, struct libtofcan_batch *batch);
+int view_set(const struct View *new_view) {
+    view = new_view;
+    return view->init();
+}

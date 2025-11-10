@@ -18,13 +18,10 @@
 #include <SDL.h>
 #include <SDL_ttf.h>
 
-#define CELL_WIDTH 80
-#define CELL_HEIGHT CELL_WIDTH
-#define WINDOW_WIDTH  (CELL_WIDTH * 8)
-#define WINDOW_HEIGHT (CELL_HEIGHT * 8)
+#include "view.h"
 
-#define GRID_XOFF 0
-#define GRID_YOFF 0
+#define WINDOW_WIDTH 640
+#define WINDOW_HEIGHT 640
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
@@ -81,88 +78,11 @@ int display_tick(void) {
     return 0;
 }
 
-void display_refresh(void) {
+void display_update(void) {
+    view->update(renderer, font);
     SDL_RenderPresent(renderer);
 
     // clear window
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-}
-
-static SDL_Color choose_fg_color(SDL_Color bg) {
-    double bg_l = (bg.r * 0.299 + bg.g * 0.587 + bg.b * 0.114);
-    if(bg_l > 128)
-        return (SDL_Color) { 0, 0, 0 };
-    else
-        return (SDL_Color) { 255, 255, 255 };
-}
-
-static void write_value(int val, int bg_color, int x, int y) {
-    char text[16];
-    snprintf(text, sizeof(text), "%d", val);
-
-    SDL_Color bg = { bg_color >> 16, bg_color >> 8, bg_color };
-    SDL_Color fg = choose_fg_color(bg);
-
-    SDL_Surface *surface = TTF_RenderText_Shaded(font, text, fg, bg);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect rect = {
-        x - surface->w / 2,
-        y - surface->h / 2,
-        surface->w,
-        surface->h
-    };
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-    SDL_FreeSurface(surface);
-    SDL_DestroyTexture(texture);
-}
-
-int display_update(int16_t values[64], int32_t colors[64]) {
-    for(int i = 0; i < 64; i++) {
-        int val = values[i];
-        int col = colors[i];
-
-        int x = i % 8;
-        int y = i / 8;
-
-        // draw rectangle
-        SDL_SetRenderDrawColor(renderer, col >> 16, col >> 8, col, 255);
-        SDL_Rect rect = {
-            GRID_XOFF + x * CELL_WIDTH,
-            GRID_YOFF + y * CELL_HEIGHT,
-            CELL_WIDTH,
-            CELL_HEIGHT
-        };
-        SDL_RenderFillRect(renderer, &rect);
-
-        // write value number
-        write_value(
-            val, col,
-            GRID_XOFF + x * CELL_WIDTH  + CELL_WIDTH  / 2,
-            GRID_YOFF + y * CELL_HEIGHT + CELL_HEIGHT / 2
-        );
-    }
-
-    // draw grid lines
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // black
-    for(int i = 0; i < 8; i++) {
-        SDL_Rect vertical = {
-            GRID_XOFF + i * CELL_WIDTH,
-            GRID_YOFF,
-            1,
-            CELL_HEIGHT * 8
-        };
-
-        SDL_Rect horizontal = {
-            GRID_XOFF,
-            GRID_YOFF + i * CELL_HEIGHT,
-            CELL_WIDTH * 8,
-            1
-        };
-
-        SDL_RenderFillRect(renderer, &vertical);
-        SDL_RenderFillRect(renderer, &horizontal);
-    }
-    return 0;
 }

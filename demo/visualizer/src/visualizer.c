@@ -22,6 +22,7 @@
 #include "libtofcan.h"
 #include "can-io.h"
 #include "display.h"
+#include "view.h"
 
 int main(int argc, char *argv[]) {
     if(display_init()) {
@@ -32,34 +33,12 @@ int main(int argc, char *argv[]) {
     pthread_t can_io_thread;
     pthread_create(&can_io_thread, NULL, can_io_start, NULL);
 
+    view_set(&view_grid);
     while(!display_tick()) {
-        struct libtofcan_batch batch;
-        if(can_io_get_data(&batch)) {
-            // sleep 2 ms before trying again
-            nanosleep(&(struct timespec) { .tv_nsec = 2000000 }, NULL);
-            continue;
-        }
+        display_update();
 
-        // get min and max distances
-        int min = batch.data[0];
-        int max = min;
-        for(int i = 1; i < 64; i++) {
-            int point = batch.data[i];
-            if(min > point)
-                min = point;
-            if(max < point)
-                max = point;
-        }
-
-        // calculate colors
-        int32_t colors[64];
-        for(int i = 0; i < 64; i++) {
-            int gray = 255 - (255 * (batch.data[i] - min) / max);
-            colors[i] = gray << 16 | gray << 8 | gray;
-        }
-
-        display_update(batch.data, colors);
-        display_refresh();
+        // sleep 10 ms
+        nanosleep(&(struct timespec) { .tv_nsec = 10000000 }, NULL);
     }
     return 0;
 }

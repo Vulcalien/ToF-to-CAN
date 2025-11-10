@@ -85,19 +85,19 @@ static int can_read(uint32_t *can_id, void *data) {
     return len;
 }
 
-static void callback_sample(int sensor, struct distance_sensor_can_sample *data) {
-    // nothing to do
-}
-
 #define QUEUE_SIZE 8
 static struct {
-    struct libtofcan_batch batches[QUEUE_SIZE];
+    struct {
+        int sensor;
+        struct libtofcan_batch batch;
+    } batches[QUEUE_SIZE];
+
     int head;
     int tail;
     int count;
 
     pthread_mutex_t mutex;
-} batch_queue;
+} queue;
 
 static void callback_batch(int sensor, struct libtofcan_batch *data, bool valid) {
     // if batch is not valid, write an error
@@ -124,15 +124,16 @@ static void callback_batch(int sensor, struct libtofcan_batch *data, bool valid)
     printf("\n");
 
     // insert batch into queue
-    pthread_mutex_lock(&batch_queue.mutex);
+    pthread_mutex_lock(&queue.mutex);
+    queue.batches[queue.head].sensor = sensor;
     memcpy(
-        &batch_queue.batches[batch_queue.head],
+        &queue.batches[queue.head].batch,
         data, sizeof(struct libtofcan_batch)
     );
-    batch_queue.head = (batch_queue.head + 1) % QUEUE_SIZE;
-    if(batch_queue.count < QUEUE_SIZE)
-        batch_queue.count++;
-    pthread_mutex_unlock(&batch_queue.mutex);
+    queue.head = (queue.head + 1) % QUEUE_SIZE;
+    if(queue.count < QUEUE_SIZE)
+        queue.count++;
+    pthread_mutex_unlock(&queue.mutex);
 }
 
 void *can_io_start(void *arg) {
@@ -141,7 +142,7 @@ void *can_io_start(void *arg) {
         return NULL;
     }
 
-    pthread_mutex_init(&batch_queue.mutex, NULL);
+    pthread_mutex_init(&queue.mutex, NULL);
 
     // configure sensor
     struct libtofcan_msg msg;
@@ -159,7 +160,7 @@ void *can_io_start(void *arg) {
     });
     can_write(msg.id, msg.data, msg.len);
 
-    libtofcan_set_callbacks(callback_sample, callback_batch);
+    libtofcan_set_callbacks(NULL, callback_batch);
     while(1) {
         uint32_t can_id;
         uint8_t data[8];
@@ -178,25 +179,26 @@ void *can_io_start(void *arg) {
     return NULL;
 }
 
-int can_io_get_data(struct libtofcan_batch *batch) {
+int can_io_get_data(int *sensor, struct libtofcan_batch *batch) {
     int err = 0;
-    pthread_mutex_lock(&batch_queue.mutex);
+    pthread_mutex_lock(&queue.mutex);
 
-    if(batch_queue.count == 0) {
+    if(queue.count == 0) {
         err = 1;
         goto exit;
     }
 
     // extract one batch from queue
+    *sensor = queue.batches[queue.tail].sensor;
     memcpy(
         batch,
-        &batch_queue.batches[batch_queue.tail],
+        &queue.batches[queue.tail].batch,
         sizeof(struct libtofcan_batch)
     );
-    batch_queue.tail = (batch_queue.tail + 1) % QUEUE_SIZE;
-    batch_queue.count--;
+    queue.tail = (queue.tail + 1) % QUEUE_SIZE;
+    queue.count--;
 
     exit:
-    pthread_mutex_unlock(&batch_queue.mutex);
+    pthread_mutex_unlock(&queue.mutex);
     return err;
 }

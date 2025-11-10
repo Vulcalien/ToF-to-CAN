@@ -15,10 +15,18 @@
  */
 #pragma once
 
-#include "visualizer.h"
+#include <SDL.h>
+#include <SDL_ttf.h>
 
-#include "libtofcan.h"
+struct View {
+    int (*init)(void);
+    int (*update)(SDL_Renderer *renderer, TTF_Font *font);
+};
 
-extern void *can_io_start(void *arg);
+extern const struct View *view;
 
-extern int can_io_get_data(int *sensor, struct libtofcan_batch *batch);
+extern const struct View
+    view_grid,
+    view_ring;
+
+extern int view_set(const struct View *new_view);

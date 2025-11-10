@@ -20,5 +20,4 @@
 extern int display_init(void);
 extern int display_tick(void);
 
-extern void display_refresh(void);
-extern int display_update(int16_t values[64], int32_t colors[64]);
+extern void display_update(void);
