@@ -21,7 +21,7 @@
 #include "libtofcan.h"
 #include "can-io.h"
 
-#define CELL_WIDTH 80
+#define CELL_WIDTH 75
 #define CELL_HEIGHT CELL_WIDTH
 
 #define GRID_XOFF 0

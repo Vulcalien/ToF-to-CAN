@@ -17,6 +17,9 @@
 
 #include "visualizer.h"
 
+#define DISPLAY_WIDTH 800
+#define DISPLAY_HEIGHT 600
+
 extern int display_init(void);
 extern int display_tick(void);
 

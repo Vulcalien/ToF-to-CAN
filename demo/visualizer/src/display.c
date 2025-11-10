@@ -20,9 +20,6 @@
 
 #include "view.h"
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 640
-
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 
@@ -42,7 +39,7 @@ int display_init(void) {
     window = SDL_CreateWindow(
         "ToF Visualizer",
         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        WINDOW_WIDTH, WINDOW_HEIGHT,
+        DISPLAY_WIDTH, DISPLAY_HEIGHT,
         SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN
     );
     if(!window) {
@@ -57,9 +54,9 @@ int display_init(void) {
     }
 
     // automatically scale-and-fit
-    SDL_RenderSetLogicalSize(renderer, WINDOW_WIDTH, WINDOW_HEIGHT);
+    SDL_RenderSetLogicalSize(renderer, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
-    font = TTF_OpenFont("res/DejaVuLGCSansMono.ttf", 20);
+    font = TTF_OpenFont("res/DejaVuLGCSansMono.ttf", 19);
     if(!font) {
         printf("[Display] TTF_OpenFont: %s\n", TTF_GetError());
         return 1;
