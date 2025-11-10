@@ -70,11 +70,11 @@ static void write_value(SDL_Renderer *renderer, TTF_Font *font,
     SDL_DestroyTexture(texture);
 }
 
-static int grid_update(SDL_Renderer *renderer, TTF_Font *font) {
+static bool grid_update(SDL_Renderer *renderer, TTF_Font *font) {
     int sensor;
     struct libtofcan_batch batch;
     if(can_io_get_data(&sensor, &batch))
-        return 0;
+        return false;
 
     // get min and max distances
     int min = batch.data[0];
@@ -135,7 +135,7 @@ static int grid_update(SDL_Renderer *renderer, TTF_Font *font) {
         SDL_RenderFillRect(renderer, &horizontal);
     }
 
-    return 0;
+    return true;
 }
 
 const struct View view_grid = {

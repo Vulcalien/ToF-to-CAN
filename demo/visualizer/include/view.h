@@ -15,12 +15,16 @@
  */
 #pragma once
 
+#include "visualizer.h"
+
 #include <SDL.h>
 #include <SDL_ttf.h>
 
 struct View {
     int (*init)(void);
-    int (*update)(SDL_Renderer *renderer, TTF_Font *font);
+
+    // returns true if the display should be refreshed
+    bool (*update)(SDL_Renderer *renderer, TTF_Font *font);
 };
 
 extern const struct View *view;

@@ -76,10 +76,11 @@ int display_tick(void) {
 }
 
 void display_update(void) {
-    view->update(renderer, font);
-    SDL_RenderPresent(renderer);
+    if(view->update(renderer, font)) {
+        SDL_RenderPresent(renderer);
 
-    // clear window
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
+        // clear window
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+    }
 }

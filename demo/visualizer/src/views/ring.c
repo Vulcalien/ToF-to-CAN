@@ -39,7 +39,7 @@ static int ring_init(void) {
     return 0;
 }
 
-static int ring_update(SDL_Renderer *renderer, TTF_Font *font) {
+static bool ring_update(SDL_Renderer *renderer, TTF_Font *font) {
     while(true) {
         int sensor;
         struct libtofcan_batch batch;
@@ -53,7 +53,7 @@ static int ring_update(SDL_Renderer *renderer, TTF_Font *font) {
 
     // TODO
 
-    return 0;
+    return true; // TODO only if necessary
 }
 
 const struct View view_ring = {
