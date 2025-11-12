@@ -22,12 +22,16 @@
 
 #include "libtofcan.h"
 #include "libtofcan-ring.h"
+#include "display.h"
 #include "can-io.h"
 
 #define DIAGRAM_SIZE 64
 
 #define RING_RADIUS 0
 #define RING_SENSOR_COUNT 10
+
+#define DIAGRAM_XC (DISPLAY_WIDTH / 2)
+#define DIAGRAM_YC (DISPLAY_HEIGHT / 2)
 
 static struct libtofcan_ring ring;
 
@@ -40,6 +44,7 @@ static int ring_init(void) {
 }
 
 static bool ring_update(SDL_Renderer *renderer, TTF_Font *font) {
+    bool new_data = false;
     while(true) {
         int sensor;
         struct libtofcan_batch batch;
@@ -49,11 +54,31 @@ static bool ring_update(SDL_Renderer *renderer, TTF_Font *font) {
         // insert batch into diagram
         double angle = (sensor - 1) * (2 * M_PI / RING_SENSOR_COUNT);
         libtofcan_ring_insert(&ring, &batch, angle);
+
+        new_data = true;
     }
 
-    // TODO
+    // if no new data was added, don't refresh
+    if(!new_data)
+        return false;
 
-    return true; // TODO only if necessary
+    for(int i = 0; i < DIAGRAM_SIZE; i++) {
+        double angle = i * (2 * M_PI) / DIAGRAM_SIZE;
+        int distance = ring.diagram[i];
+
+        int x = DIAGRAM_XC + cos(angle) * distance + 0.5;
+        int y = DIAGRAM_YC + sin(angle) * distance + 0.5;
+
+        // draw a small square
+        SDL_Rect rect = { x - 2, y - 2, 5, 5 };
+        SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
+        SDL_RenderFillRect(renderer, &rect);
+
+        // draw a line from center to square
+        SDL_SetRenderDrawColor(renderer, 0x20, 0x20, 0x20, 255);
+        SDL_RenderDrawLine(renderer, DIAGRAM_XC, DIAGRAM_YC, x, y);
+    }
+    return true;
 }
 
 const struct View view_ring = {

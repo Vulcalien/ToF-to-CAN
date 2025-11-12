@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     pthread_t can_io_thread;
     pthread_create(&can_io_thread, NULL, can_io_start, NULL);
 
-    view_set(&view_grid);
+    view_set(&view_ring);
     while(!display_tick()) {
         display_update();
 
