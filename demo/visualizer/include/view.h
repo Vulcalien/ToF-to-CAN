@@ -18,13 +18,12 @@
 #include "visualizer.h"
 
 #include <SDL.h>
-#include <SDL_ttf.h>
 
 struct View {
     int (*init)(void);
 
     // returns true if the display should be refreshed
-    bool (*update)(SDL_Renderer *renderer, TTF_Font *font);
+    bool (*update)(SDL_Renderer *renderer);
 };
 
 extern const struct View *view;

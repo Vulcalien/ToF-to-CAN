@@ -76,11 +76,37 @@ int display_tick(void) {
 }
 
 void display_update(void) {
-    if(view->update(renderer, font)) {
+    if(view->update(renderer)) {
         SDL_RenderPresent(renderer);
 
         // clear window
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
     }
+}
+
+static inline SDL_Color choose_fg_color(SDL_Color bg) {
+    double bg_l = (bg.r * 0.299 + bg.g * 0.587 + bg.b * 0.114);
+    if(bg_l > 128)
+        return (SDL_Color) { 0, 0, 0 };
+    else
+        return (SDL_Color) { 255, 255, 255 };
+}
+
+void display_write(const char *text, int bg_color, int xc, int yc) {
+    SDL_Color bg = { bg_color >> 16, bg_color >> 8, bg_color };
+    SDL_Color fg = choose_fg_color(bg);
+
+    SDL_Surface *surface = TTF_RenderText_Shaded(font, text, fg, bg);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_Rect rect = {
+        xc - surface->w / 2,
+        yc - surface->h / 2,
+        surface->w,
+        surface->h
+    };
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }

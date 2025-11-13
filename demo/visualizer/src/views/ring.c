@@ -43,7 +43,7 @@ static int ring_init(void) {
     return 0;
 }
 
-static bool ring_update(SDL_Renderer *renderer, TTF_Font *font) {
+static bool ring_update(SDL_Renderer *renderer) {
     bool new_data = false;
     while(true) {
         int sensor;

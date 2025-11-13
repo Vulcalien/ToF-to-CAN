@@ -19,6 +19,7 @@
 #include <SDL_ttf.h>
 
 #include "libtofcan.h"
+#include "display.h"
 #include "can-io.h"
 
 #define CELL_WIDTH 75
@@ -40,37 +41,13 @@ static inline int cell_color(int value, int min, int max) {
     return (gray << 16 | gray << 8 | gray);
 }
 
-static SDL_Color choose_fg_color(SDL_Color bg) {
-    double bg_l = (bg.r * 0.299 + bg.g * 0.587 + bg.b * 0.114);
-    if(bg_l > 128)
-        return (SDL_Color) { 0, 0, 0 };
-    else
-        return (SDL_Color) { 255, 255, 255 };
-}
-
-static void write_value(SDL_Renderer *renderer, TTF_Font *font,
-                        int val, int bg_color, int x, int y) {
+static inline void write_value(int val, int bg_color, int x, int y) {
     char text[16];
     snprintf(text, sizeof(text), "%d", val);
-
-    SDL_Color bg = { bg_color >> 16, bg_color >> 8, bg_color };
-    SDL_Color fg = choose_fg_color(bg);
-
-    SDL_Surface *surface = TTF_RenderText_Shaded(font, text, fg, bg);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_Rect rect = {
-        x - surface->w / 2,
-        y - surface->h / 2,
-        surface->w,
-        surface->h
-    };
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-    SDL_FreeSurface(surface);
-    SDL_DestroyTexture(texture);
+    display_write(text, bg_color, x, y);
 }
 
-static bool grid_update(SDL_Renderer *renderer, TTF_Font *font) {
+static bool grid_update(SDL_Renderer *renderer) {
     int sensor;
     struct libtofcan_batch batch;
     if(can_io_get_data(&sensor, &batch))
@@ -106,11 +83,9 @@ static bool grid_update(SDL_Renderer *renderer, TTF_Font *font) {
             SDL_RenderFillRect(renderer, &rect);
 
             // write value number
-            write_value(
-                renderer, font, value, color,
-                GRID_XOFF + x * CELL_WIDTH  + CELL_WIDTH  / 2,
-                GRID_YOFF + y * CELL_HEIGHT + CELL_HEIGHT / 2
-            );
+            int xc = GRID_XOFF + x * CELL_WIDTH  + CELL_WIDTH  / 2;
+            int yc = GRID_YOFF + y * CELL_HEIGHT + CELL_HEIGHT / 2;
+            write_value(value, color, xc, yc);
         }
     }
 
