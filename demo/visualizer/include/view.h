@@ -19,11 +19,15 @@
 
 #include <SDL.h>
 
+#include "display.h"
+
 struct View {
     int (*init)(void);
 
     // returns true if the display should be refreshed
     bool (*update)(SDL_Renderer *renderer);
+
+    void (*keypress)(struct DisplayInput *input);
 };
 
 extern const struct View *view;

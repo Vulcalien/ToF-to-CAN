@@ -94,7 +94,11 @@ static bool ring_update(SDL_Renderer *renderer) {
     return true;
 }
 
+static void ring_keypress(struct DisplayInput *input) {
+}
+
 const struct View view_ring = {
     .init = ring_init,
-    .update = ring_update
+    .update = ring_update,
+    .keypress = ring_keypress
 };

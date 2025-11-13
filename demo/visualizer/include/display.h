@@ -20,6 +20,16 @@
 #define DISPLAY_WIDTH 800
 #define DISPLAY_HEIGHT 600
 
+struct DisplayInput {
+    bool up;
+    bool left;
+    bool down;
+    bool right;
+
+    bool a;
+    bool b;
+};
+
 extern int display_init(void);
 extern int display_tick(void);
 

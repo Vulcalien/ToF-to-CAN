@@ -113,7 +113,11 @@ static bool grid_update(SDL_Renderer *renderer) {
     return true;
 }
 
+static void grid_keypress(struct DisplayInput *input) {
+}
+
 const struct View view_grid = {
     .init = grid_init,
-    .update = grid_update
+    .update = grid_update,
+    .keypress = grid_keypress
 };

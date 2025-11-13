@@ -76,11 +76,38 @@ int display_init(void) {
 }
 
 int display_tick(void) {
+    struct DisplayInput input = { 0 };
+
     SDL_Event e;
     while(SDL_PollEvent(&e)) {
         if(e.type == SDL_QUIT)
             return 1;
+
+        if(e.type == SDL_KEYDOWN) {
+            switch(e.key.keysym.sym) {
+                case SDLK_UP:
+                    input.up = true;
+                    break;
+                case SDLK_LEFT:
+                    input.left = true;
+                    break;
+                case SDLK_DOWN:
+                    input.down = true;
+                    break;
+                case SDLK_RIGHT:
+                    input.right = true;
+                    break;
+                case SDLK_x:
+                    input.a = true;
+                    break;
+                case SDLK_z:
+                    input.b = true;
+                    break;
+            }
+        }
     }
+    view->keypress(&input);
+
     return 0;
 }
 
