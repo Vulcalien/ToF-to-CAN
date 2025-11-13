@@ -73,17 +73,13 @@ void libtofcan_ring_insert(struct libtofcan_ring *ring,
     for(int i = 0; i < batch->data_length; i++) {
         struct Polar input = {
             .angle = angle_of_point(i, batch->data_length),
-
-            // take samples in reverse order to compensate for mirroring
-            .distance = batch->data[batch->data_length - 1 - i]
+            .distance = batch->data[i]
         };
 
         struct Polar point;
         get_absolute_polar(&point, &input, ring->radius, angle);
 
         int diagram_index = point.angle / angle_per_cell;
-        int16_t *diagram_cell = &ring->diagram[diagram_index];
-        if(*diagram_cell == -1 || *diagram_cell > point.distance)
-            *diagram_cell = point.distance;
+        ring->diagram[diagram_index] = point.distance;
     }
 }
