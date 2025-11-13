@@ -23,7 +23,10 @@
 static SDL_Window *window;
 static SDL_Renderer *renderer;
 
-static TTF_Font *font;
+static struct {
+    TTF_Font *normal;
+    TTF_Font *small;
+} font;
 
 int display_init(void) {
     if(SDL_Init(SDL_INIT_VIDEO)) {
@@ -56,8 +59,14 @@ int display_init(void) {
     // automatically scale-and-fit
     SDL_RenderSetLogicalSize(renderer, DISPLAY_WIDTH, DISPLAY_HEIGHT);
 
-    font = TTF_OpenFont("res/DejaVuLGCSansMono.ttf", 19);
-    if(!font) {
+    font.normal = TTF_OpenFont("res/DejaVuLGCSansMono.ttf", 19);
+    if(!font.normal) {
+        printf("[Display] TTF_OpenFont: %s\n", TTF_GetError());
+        return 1;
+    }
+
+    font.small = TTF_OpenFont("res/DejaVuLGCSansMono.ttf", 12);
+    if(!font.small) {
         printf("[Display] TTF_OpenFont: %s\n", TTF_GetError());
         return 1;
     }
@@ -93,7 +102,8 @@ static inline SDL_Color choose_fg_color(SDL_Color bg) {
         return (SDL_Color) { 255, 255, 255 };
 }
 
-void display_write(const char *text, int bg_color, int xc, int yc) {
+static void write_text(TTF_Font *font,
+                       const char *text, int bg_color, int xc, int yc) {
     SDL_Color bg = { bg_color >> 16, bg_color >> 8, bg_color };
     SDL_Color fg = choose_fg_color(bg);
 
@@ -109,4 +119,12 @@ void display_write(const char *text, int bg_color, int xc, int yc) {
 
     SDL_FreeSurface(surface);
     SDL_DestroyTexture(texture);
+}
+
+void display_write(const char *text, int bg_color, int xc, int yc) {
+    write_text(font.normal, text, bg_color, xc, yc);
+}
+
+void display_write_small(const char *text, int bg_color, int xc, int yc) {
+    write_text(font.small, text, bg_color, xc, yc);
 }

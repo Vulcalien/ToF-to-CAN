@@ -26,3 +26,4 @@ extern int display_tick(void);
 extern void display_update(void);
 
 extern void display_write(const char *text, int bg_color, int xc, int yc);
+extern void display_write_small(const char *text, int bg_color, int xc, int yc);

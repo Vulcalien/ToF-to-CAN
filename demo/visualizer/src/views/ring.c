@@ -43,6 +43,12 @@ static int ring_init(void) {
     return 0;
 }
 
+static inline void write_value(int val, int bg_color, int x, int y) {
+    char text[16];
+    snprintf(text, sizeof(text), "%d", val);
+    display_write_small(text, bg_color, x, y);
+}
+
 static bool ring_update(SDL_Renderer *renderer) {
     bool new_data = false;
     while(true) {
@@ -69,14 +75,21 @@ static bool ring_update(SDL_Renderer *renderer) {
         int x = DIAGRAM_XC + cos(angle) * distance + 0.5;
         int y = DIAGRAM_YC + sin(angle) * distance + 0.5;
 
+        // draw a line from center to square
+        SDL_SetRenderDrawColor(renderer, 0x20, 0x20, 0x20, 255);
+        SDL_RenderDrawLine(renderer, DIAGRAM_XC, DIAGRAM_YC, x, y);
+
         // draw a small square
         SDL_Rect rect = { x - 2, y - 2, 5, 5 };
         SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 255);
         SDL_RenderFillRect(renderer, &rect);
 
-        // draw a line from center to square
-        SDL_SetRenderDrawColor(renderer, 0x20, 0x20, 0x20, 255);
-        SDL_RenderDrawLine(renderer, DIAGRAM_XC, DIAGRAM_YC, x, y);
+        // write value number on top of point
+        write_value(
+            distance, 0x000000,
+            x + cos(angle) * 12,
+            y + sin(angle) * 12
+        );
     }
     return true;
 }
