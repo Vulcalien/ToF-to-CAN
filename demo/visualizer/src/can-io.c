@@ -56,33 +56,33 @@ static int can_open(const char *ifname) {
     return 0;
 }
 
-static int can_write(uint32_t can_id, void *data, int len) {
+static int can_write(const struct libtofcan_msg *msg) {
     struct can_frame frame;
-
-    frame.can_id  = can_id;
-    frame.can_dlc = len;
-    memcpy(frame.data, data, len);
+    frame.can_id  = msg->id | (msg->rtr * RTR_BIT);
+    frame.can_dlc = msg->len;
+    memcpy(frame.data, msg->data, msg->len);
 
     const int frame_size = sizeof(struct can_frame);
     if(write(sockfd, &frame, frame_size) != frame_size) {
         perror("CAN write");
         return -1;
     }
-    return len;
+    return msg->len;
 }
 
-static int can_read(uint32_t *can_id, void *data) {
+static int can_read(struct libtofcan_msg *msg) {
     struct can_frame frame;
-
     if(read(sockfd, &frame, sizeof(struct can_frame)) < 0) {
         perror("CAN read");
         return -1;
     }
 
-    *can_id = frame.can_id;
-    int len = frame.can_dlc;
-    memcpy(data, frame.data, len);
-    return len;
+    msg->id  = frame.can_id & ~RTR_BIT;
+    msg->rtr = frame.can_id & RTR_BIT;
+    msg->len = frame.can_dlc;
+    memcpy(msg->data, frame.data, msg->len);
+
+    return msg->len;
 }
 
 #define QUEUE_SIZE 8
@@ -158,23 +158,13 @@ void *can_io_start(void *arg) {
         .transmit_timing    = 1, // continuous
         .transmit_condition = 0, // ignored (multiple samples)
     });
-    can_write(msg.id, msg.data, msg.len);
+    can_write(&msg);
 
     libtofcan_set_callbacks(NULL, callback_batch);
     while(1) {
-        uint32_t can_id;
-        uint8_t data[8];
-        int len = can_read(&can_id, data);
-
-        if(len < 0)
-            continue;
-
-        libtofcan_receive(&(struct libtofcan_msg) {
-            .id   = can_id & ~RTR_BIT,
-            .rtr  = can_id & RTR_BIT,
-            .data = data,
-            .len  = len
-        });
+        struct libtofcan_msg msg;
+        if(can_read(&msg) > 0)
+            libtofcan_receive(&msg);
     }
     return NULL;
 }

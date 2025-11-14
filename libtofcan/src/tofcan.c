@@ -40,24 +40,16 @@ void libtofcan_set_callbacks(
 
 void libtofcan_config(int sensor, struct libtofcan_msg *msg,
                       struct distance_sensor_can_config *config) {
-    static uint8_t data[DISTANCE_SENSOR_CAN_CONFIG_SIZE];
-    memcpy(data, config, DISTANCE_SENSOR_CAN_CONFIG_SIZE);
-
-    *msg = (struct libtofcan_msg) {
-        .id   = DISTANCE_SENSOR_CAN_CONFIG_MASK_ID | sensor,
-        .rtr  = false,
-        .data = data,
-        .len  = DISTANCE_SENSOR_CAN_CONFIG_SIZE
-    };
+    msg->id  = DISTANCE_SENSOR_CAN_CONFIG_MASK_ID | sensor;
+    msg->rtr = false;
+    msg->len = DISTANCE_SENSOR_CAN_CONFIG_SIZE;
+    memcpy(msg->data, config, DISTANCE_SENSOR_CAN_CONFIG_SIZE);
 }
 
 void libtofcan_request(int sensor, struct libtofcan_msg *msg) {
-    *msg = (struct libtofcan_msg) {
-        .id   = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor,
-        .rtr  = true,
-        .data = NULL,
-        .len  = 0
-    };
+    msg->id  = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor;
+    msg->rtr = true;
+    msg->len = 0;
 }
 
 /* ================================================================== */
@@ -76,7 +68,7 @@ static void publish_batch(int sensor, struct libtofcan_batch *data,
         callbacks.batch(sensor, data, valid);
 }
 
-static void handle_sample(int sensor, void *data, int len) {
+static void handle_sample(int sensor, const void *data, int len) {
     // check if message size is correct
     if(len != sizeof(struct distance_sensor_can_sample))
         return;
@@ -122,7 +114,7 @@ static void batch_insert(struct libtofcan_batch *batch,
         batch->packets_expected = 1 + packet->sequence_number;
 }
 
-static void handle_data_packet(int sensor, void *data, int len) {
+static void handle_data_packet(int sensor, const void *data, int len) {
     static struct libtofcan_batch batches[DISTANCE_SENSOR_MAX_COUNT];
 
     // check if message size is correct

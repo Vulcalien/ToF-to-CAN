@@ -35,8 +35,8 @@ struct libtofcan_batch {
 struct libtofcan_msg {
     uint32_t id;
     bool     rtr;
-    void    *data;
     int      len;
+    uint8_t  data[8];
 };
 
 /*
