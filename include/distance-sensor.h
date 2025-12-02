@@ -1,5 +1,8 @@
-#ifndef DISTANCE_SENSOR_CAN_INTERFACE
-#define DISTANCE_SENSOR_CAN_INTERFACE
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -208,4 +211,6 @@ struct distance_sensor_can_data_packet {
 #define DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID      0x6e0 // 0x6e0...0x6ff
 #define DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID 0x700 // 0x700...0x71f
 
-#endif // DISTANCE_SENSOR_CAN_INTERFACE
+#ifdef __cplusplus
+}
+#endif

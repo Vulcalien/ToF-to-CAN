@@ -15,6 +15,10 @@
  */
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -35,3 +39,7 @@ extern void libtofcan_ring_reset(struct libtofcan_ring *ring);
 extern void libtofcan_ring_insert(struct libtofcan_ring *ring,
                                   const struct libtofcan_batch *batch,
                                   double angle);
+
+#ifdef __cplusplus
+}
+#endif

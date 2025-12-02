@@ -15,6 +15,10 @@
  */
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -79,3 +83,7 @@ extern void libtofcan_config_string(
     struct distance_sensor_can_config *config,
     char *str, int maxlen
 );
+
+#ifdef __cplusplus
+}
+#endif
