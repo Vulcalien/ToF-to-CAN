@@ -68,12 +68,14 @@ static bool ring_update(SDL_Renderer *renderer) {
     if(!new_data)
         return false;
 
+#define D_SCALE 0.5
+
     for(int i = 0; i < DIAGRAM_SIZE; i++) {
         double angle = i * (2 * M_PI) / DIAGRAM_SIZE;
         int distance = ring.diagram[i];
 
-        int x = DIAGRAM_XC + cos(angle) * distance + 0.5;
-        int y = DIAGRAM_YC + sin(angle) * distance + 0.5;
+        int x = DIAGRAM_XC + cos(angle) * distance * D_SCALE + 0.5;
+        int y = DIAGRAM_YC + sin(angle) * distance * D_SCALE + 0.5;
 
         // draw a line from center to square
         SDL_SetRenderDrawColor(renderer, 0x20, 0x20, 0x20, 255);
