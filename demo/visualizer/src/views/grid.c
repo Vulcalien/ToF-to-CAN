@@ -114,6 +114,11 @@ static bool grid_update(SDL_Renderer *renderer) {
 }
 
 static void grid_keypress(struct DisplayInput *input) {
+    // update shown sensor
+    if(input->left && shown_sensor > 0)
+        shown_sensor--;
+    if(input->right && shown_sensor < DISTANCE_SENSOR_MAX_COUNT - 1)
+        shown_sensor++;
 }
 
 const struct View view_grid = {
