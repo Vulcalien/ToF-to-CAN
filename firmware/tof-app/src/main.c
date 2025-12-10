@@ -37,7 +37,7 @@ static int cmd_help(char *arg0) {
     return 0;
 }
 
-int main(int argc, char *argv[]) {
+int tof_app_main(int argc, char *argv[]) {
     char *arg0 = (argc > 0 ? argv[0] : "<PROGRAM-NAME>");
 
     while(tof_init())
