@@ -29,9 +29,11 @@
 #define GRID_YOFF 0
 
 static int shown_sensor;
+static bool has_sensor_changed;
 
 static int grid_init(void) {
     shown_sensor = 0;
+    has_sensor_changed = true;
 
     return 0;
 }
@@ -47,11 +49,28 @@ static inline void write_value(int val, int bg_color, int x, int y) {
     display_write(text, bg_color, x, y);
 }
 
+static inline void write_sensor_id(int id) {
+    char text[16];
+    snprintf(text, sizeof(text), "Sensor: %d", id);
+    display_write(
+        text, 0x000000,
+        (DISPLAY_WIDTH + CELL_WIDTH * 8) / 2,
+        DISPLAY_HEIGHT - 40
+    );
+}
+
 static bool grid_update(SDL_Renderer *renderer) {
     int sensor;
     struct libtofcan_batch batch;
-    if(can_io_get_data(&sensor, &batch))
+    if(can_io_get_data(&sensor, &batch) || sensor != shown_sensor) {
+        // if there is no new data, only refresh if the sensor changed
+        if(has_sensor_changed) {
+            has_sensor_changed = false;
+            write_sensor_id(shown_sensor);
+            return true;
+        }
         return false;
+    }
 
     // get min and max distances
     int min = batch.data[0];
@@ -110,15 +129,25 @@ static bool grid_update(SDL_Renderer *renderer) {
         SDL_RenderFillRect(renderer, &horizontal);
     }
 
+    write_sensor_id(shown_sensor);
     return true;
 }
 
 static void grid_keypress(struct DisplayInput *input) {
-    // update shown sensor
-    if(input->left && shown_sensor > 0)
-        shown_sensor--;
-    if(input->right && shown_sensor < DISTANCE_SENSOR_MAX_COUNT - 1)
-        shown_sensor++;
+    int change = 0;
+    if(input->left || input->down)
+        change--;
+    if(input->right || input->up)
+        change++;
+
+    if(change != 0) {
+        has_sensor_changed = true;
+        shown_sensor += change;
+        if(shown_sensor < 0)
+            shown_sensor = 0;
+        if(shown_sensor > DISTANCE_SENSOR_MAX_COUNT - 1)
+            shown_sensor = DISTANCE_SENSOR_MAX_COUNT - 1;
+    }
 }
 
 const struct View view_grid = {
