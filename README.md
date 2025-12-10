@@ -16,18 +16,12 @@ Retrieve all git submodules:
 ```sh
 git submodule update --init --depth=1
 ```
+
 ### Generating the binary
-Run `make ID=<sensor-id>` to compile the firmware. If the command fails
-with an error, try running the following commands:
-
-```sh
-cp config/tof-l431-nsh/defconfig submodules/nuttx/.config
-make ID=<sensor-id>
-```
-
-After building the firmware, the binary `submodules/nuttx/nuttx.bin`
-should be present. Flash this file by running `make program
-ID=<sensor-id>` (which uses OpenOCD) or another flashing software.
+Run `make ID=<sensor-id>` to compile the firmware. On success, the file
+`submodules/nuttx/nuttx.bin` is generated. Flash this file into the
+microcontroller by running `make program ID=<sensor-id>` (which uses
+OpenOCD) or using another flashing software.
 
 ## Usage
 TODO
