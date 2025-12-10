@@ -1,20 +1,20 @@
 #include "main.h"
 
-#include "distance-sensor.h"
+#include "tof2can.h"
 
 // Compile-time checks
 
 _Static_assert(
-    sizeof(struct distance_sensor_can_config) == DISTANCE_SENSOR_CAN_CONFIG_SIZE,
-    "size of struct distance_sensor_can_config is incorrect"
+    sizeof(struct tof2can_config) == TOF2CAN_CONFIG_SIZE,
+    "size of struct tof2can_config is incorrect"
 );
 
 _Static_assert(
-    sizeof(struct distance_sensor_can_sample) == DISTANCE_SENSOR_CAN_SAMPLE_SIZE,
-    "size of struct distance_sensor_can_sample is incorrect"
+    sizeof(struct tof2can_sample) == TOF2CAN_SAMPLE_SIZE,
+    "size of struct tof2can_sample is incorrect"
 );
 
 _Static_assert(
-    sizeof(struct distance_sensor_can_data_packet) == DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE,
-    "size of struct distance_sensor_can_data_packet is incorrect"
+    sizeof(struct tof2can_data_packet) == TOF2CAN_DATA_PACKET_SIZE,
+    "size of struct tof2can_data_packet is incorrect"
 );

@@ -26,7 +26,7 @@
 #include <sys/ioctl.h>
 #include <nuttx/can/can.h>
 
-#include "distance-sensor.h"
+#include "tof2can.h"
 #include "processing.h"
 #include "tof.h"
 
@@ -60,7 +60,7 @@ static void handle_message(const struct can_msg_s *msg) {
     /*if(msg->cm_hdr.tcf)*/
         /*return;*/
 
-    const int msg_sensor_id = msg->cm_hdr.ch_id % DISTANCE_SENSOR_MAX_COUNT;
+    const int msg_sensor_id = msg->cm_hdr.ch_id % TOF2CAN_MAX_SENSOR_COUNT;
     const int msg_type      = msg->cm_hdr.ch_id - msg_sensor_id;
 
     // check if message is addressed to this device (ID=0 is broadcast)
@@ -68,13 +68,13 @@ static void handle_message(const struct can_msg_s *msg) {
         return;
 
     switch(msg_type) {
-        case DISTANCE_SENSOR_CAN_CONFIG_MASK_ID: {
+        case TOF2CAN_CONFIG_MASK_ID: {
             // check if message size is correct
-            if(msg->cm_hdr.ch_dlc != DISTANCE_SENSOR_CAN_CONFIG_SIZE) {
+            if(msg->cm_hdr.ch_dlc != TOF2CAN_CONFIG_SIZE) {
                 printf(
                     "[CAN-IO] malformed config message "
                     "(size=%d, expected=%d)\n",
-                    msg->cm_hdr.ch_dlc, DISTANCE_SENSOR_CAN_CONFIG_SIZE
+                    msg->cm_hdr.ch_dlc, TOF2CAN_CONFIG_SIZE
                 );
                 break;
             }
@@ -82,8 +82,8 @@ static void handle_message(const struct can_msg_s *msg) {
             printf("\n=== Configuring ===\n");
             sender_pause(); // pause sender thread
 
-            struct distance_sensor_can_config *config =
-                (struct distance_sensor_can_config *) &msg->cm_data;
+            struct tof2can_config *config =
+                (struct tof2can_config *) &msg->cm_data;
 
             // set ToF settings
             tof_set_resolution(config->resolution);
@@ -103,8 +103,8 @@ static void handle_message(const struct can_msg_s *msg) {
             printf("\n"); // write blank line as separator
         } break;
 
-        case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID:
-        case DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID: {
+        case TOF2CAN_SAMPLE_MASK_ID:
+        case TOF2CAN_DATA_PACKET_MASK_ID: {
             // if RTR bit is set, request a data message
             if(msg->cm_hdr.ch_rtr)
                 sem_post(&request_data_message);
@@ -168,8 +168,8 @@ static void sender_resume(void) {
 static int write_single_sample(int16_t distance, bool below_threshold) {
     struct can_msg_s msg;
 
-    const int datalen = sizeof(struct distance_sensor_can_sample);
-    const int id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor_id;
+    const int datalen = sizeof(struct tof2can_sample);
+    const int id = TOF2CAN_SAMPLE_MASK_ID | sensor_id;
 
     // set CAN header
     msg.cm_hdr = (struct can_hdr_s) {
@@ -180,7 +180,7 @@ static int write_single_sample(int16_t distance, bool below_threshold) {
     };
 
     // set CAN data
-    struct distance_sensor_can_sample msg_data = {
+    struct tof2can_sample msg_data = {
         .distance        = distance,
         .below_threshold = below_threshold
     };
@@ -202,8 +202,8 @@ static int write_data_packets(int16_t *data, int length) {
 
     struct can_msg_s msg;
 
-    const int datalen = sizeof(struct distance_sensor_can_data_packet);
-    const int id = DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID | sensor_id;
+    const int datalen = sizeof(struct tof2can_data_packet);
+    const int id = TOF2CAN_DATA_PACKET_MASK_ID | sensor_id;
 
     // set CAN header
     msg.cm_hdr = (struct can_hdr_s) {
@@ -215,7 +215,7 @@ static int write_data_packets(int16_t *data, int length) {
 
     const int packet_count = (length + 2) / 3;
     for(int i = 0; i < packet_count; i++) {
-        struct distance_sensor_can_data_packet packet = {
+        struct tof2can_data_packet packet = {
             .sequence_number = i,
             .batch_id        = batch_id,
             .last_of_batch   = (i == packet_count - 1),
@@ -375,7 +375,7 @@ int can_io_start(void) {
 int can_io_set_sensor_id(int id) {
     int err = 0;
 
-    if(id > 0 && id < DISTANCE_SENSOR_MAX_COUNT)
+    if(id > 0 && id < TOF2CAN_MAX_SENSOR_COUNT)
         sensor_id = id;
     else
         err = 1;

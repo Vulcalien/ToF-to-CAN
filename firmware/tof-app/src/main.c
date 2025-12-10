@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "distance-sensor.h"
 #include "processing.h"
 #include "can-io.h"
 #include "tof.h"

@@ -8,7 +8,7 @@ extern "C" {
 #include <stdbool.h>
 
 /*
- * struct distance_sensor_can_config (size = 8)
+ * struct tof2can_config (size = 8)
  *
  * Sent by the user device to the distance sensor to configure it. After
  * powering up, the sensor remains idle until being configured.
@@ -91,8 +91,8 @@ extern "C" {
  *     as result.
  */
 
-#define DISTANCE_SENSOR_CAN_CONFIG_SIZE 8
-struct distance_sensor_can_config {
+#define TOF2CAN_CONFIG_SIZE 8
+struct tof2can_config {
     // ToF settings
     uint8_t resolution; // 16 or 64
     uint8_t frequency;  // see documentation above
@@ -109,7 +109,7 @@ struct distance_sensor_can_config {
 };
 
 /*
- * struct distance_sensor_can_sample (size = 4)
+ * struct tof2can_sample (size = 4)
  *
  * Sent by the distance sensor when configured to obtain a single
  * distance sample.
@@ -124,8 +124,8 @@ struct distance_sensor_can_config {
  *     threshold for at least *threshold_delay* internal iterations.
  */
 
-#define DISTANCE_SENSOR_CAN_SAMPLE_SIZE 4
-struct distance_sensor_can_sample {
+#define TOF2CAN_SAMPLE_SIZE 4
+struct tof2can_sample {
     int16_t distance;
     bool below_threshold;
 
@@ -170,7 +170,7 @@ struct distance_sensor_can_sample {
  */
 
 /*
- * struct distance_sensor_can_data_packet (size = 8)
+ * struct tof2can_data_packet (size = 8)
  *
  * Sent by the distance sensor, as part of a batch of packets, when
  * configured to obtain multiple distance samples.
@@ -193,8 +193,8 @@ struct distance_sensor_can_sample {
  *     Invalid samples are represented by a negative value.
  */
 
-#define DISTANCE_SENSOR_CAN_DATA_PACKET_SIZE 8
-struct distance_sensor_can_data_packet {
+#define TOF2CAN_DATA_PACKET_SIZE 8
+struct tof2can_data_packet {
     uint8_t sequence_number;
 
     uint8_t data_length   : 2;
@@ -205,11 +205,11 @@ struct distance_sensor_can_data_packet {
 };
 
 // number of distinct sensor IDs (ID=0 is broadcast)
-#define DISTANCE_SENSOR_MAX_COUNT 32
+#define TOF2CAN_MAX_SENSOR_COUNT 32
 
-#define DISTANCE_SENSOR_CAN_CONFIG_MASK_ID      0x6c0 // 0x6c0...0x6df
-#define DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID      0x6e0 // 0x6e0...0x6ff
-#define DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID 0x700 // 0x700...0x71f
+#define TOF2CAN_CONFIG_MASK_ID      0x6c0 // 0x6c0...0x6df
+#define TOF2CAN_SAMPLE_MASK_ID      0x6e0 // 0x6e0...0x6ff
+#define TOF2CAN_DATA_PACKET_MASK_ID 0x700 // 0x700...0x71f
 
 #ifdef __cplusplus
 }

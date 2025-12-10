@@ -14,7 +14,7 @@
 
 #include <linux/can.h>
 
-#include "distance-sensor.h"
+#include "tof2can.h"
 
 static int sockfd;
 
@@ -70,7 +70,7 @@ static int can_read(uint32_t *can_id, void *data) {
     return len;
 }
 
-static void config_sensor(struct distance_sensor_can_config *config) {
+static void config_sensor(struct tof2can_config *config) {
     const char *result_selector = "?";
     switch((config->processing_mode >> 4) & 3) {
         case 0:
@@ -145,19 +145,14 @@ static void config_sensor(struct distance_sensor_can_config *config) {
     printf("  transmit timing: %s\n", timing);
     printf("  transmit condition: %s\n", condition);
 
-    can_write(
-        DISTANCE_SENSOR_CAN_CONFIG_MASK_ID,
-        config,
-        DISTANCE_SENSOR_CAN_CONFIG_SIZE
-    );
+    can_write(TOF2CAN_CONFIG_MASK_ID, config, TOF2CAN_CONFIG_SIZE);
 }
 
 static void request_sample(void) {
     printf("[Sender] requesting sample\n");
 
-    uint32_t can_id = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID;
     uint8_t data[8];
-    can_write(can_id | RTR_BIT, data, 0);
+    can_write(TOF2CAN_SAMPLE_MASK_ID | RTR_BIT, data, 0);
 }
 
 static void single_sample_receiver(void) {
@@ -169,11 +164,11 @@ static void single_sample_receiver(void) {
         if(can_id & RTR_BIT)
             continue;
 
-        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
+        const int sensor_id = can_id % TOF2CAN_MAX_SENSOR_COUNT;
         const int msg_type  = can_id - sensor_id;
 
-        if(msg_type == DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID) {
-            struct distance_sensor_can_sample sample_data;
+        if(msg_type == TOF2CAN_SAMPLE_MASK_ID) {
+            struct tof2can_sample sample_data;
             memcpy(&sample_data, data, sizeof(sample_data));
 
             printf("[Receiver] received sample (sensor=%d):\n", sensor_id);
@@ -210,7 +205,7 @@ static void batch_reset(struct DataBatch *batch,
 }
 
 static void batch_insert(struct DataBatch *batch, int sensor_id,
-                         struct distance_sensor_can_data_packet *packet) {
+                         struct tof2can_data_packet *packet) {
     const int buffer_length = sizeof(batch->data) / sizeof(int16_t);
     const int offset = packet->sequence_number * 3;
 
@@ -254,7 +249,7 @@ static void batch_print(struct DataBatch *batch, int sensor_id) {
 }
 
 static void data_packets_receiver(void) {
-    static struct DataBatch batches[DISTANCE_SENSOR_MAX_COUNT];
+    static struct DataBatch batches[TOF2CAN_MAX_SENSOR_COUNT];
 
     while(1) {
         uint32_t can_id;
@@ -264,11 +259,11 @@ static void data_packets_receiver(void) {
         if(can_id & RTR_BIT)
             continue;
 
-        const int sensor_id = can_id % DISTANCE_SENSOR_MAX_COUNT;
+        const int sensor_id = can_id % TOF2CAN_MAX_SENSOR_COUNT;
         const int msg_type  = can_id - sensor_id;
 
-        if(msg_type == DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID) {
-            struct distance_sensor_can_data_packet packet;
+        if(msg_type == TOF2CAN_DATA_PACKET_MASK_ID) {
+            struct tof2can_data_packet packet;
             memcpy(&packet, data, sizeof(packet));
 
             struct DataBatch *batch = &batches[sensor_id];
@@ -292,7 +287,7 @@ static void data_packets_receiver(void) {
 /* ================================================================== */
 
 static void demo_default_config_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16,
         .frequency  = 1,
         .sharpener  = 5,
@@ -317,7 +312,7 @@ static void demo_default_config_sender(void) {
 /* ================================================================== */
 
 static void demo_higher_frequency_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16,
         .frequency  = 60,
         .sharpener  = 5,
@@ -342,7 +337,7 @@ static void demo_higher_frequency_sender(void) {
 /* ================================================================== */
 
 static void demo_below_threshold_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16,
         .frequency  = 60,
         .sharpener  = 5,
@@ -367,7 +362,7 @@ static void demo_below_threshold_sender(void) {
 /* ================================================================== */
 
 static void demo_continuous_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16,
         .frequency  = 1,
         .sharpener  = 5,
@@ -392,7 +387,7 @@ static void demo_continuous_sender(void) {
 /* ================================================================== */
 
 static void demo_continuous_threshold_event_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16,
         .frequency  = 60,
         .sharpener  = 5,
@@ -417,7 +412,7 @@ static void demo_continuous_threshold_event_sender(void) {
 /* ================================================================== */
 
 static void demo_all_points_in_4x4_matrix_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16, // 4x4
         .frequency  = 1,
         .sharpener  = 5,
@@ -442,7 +437,7 @@ static void demo_all_points_in_4x4_matrix_sender(void) {
 /* ================================================================== */
 
 static void demo_all_points_in_8x8_matrix_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 64, // 8x8
         .frequency  = 1,
         .sharpener  = 5,
@@ -467,7 +462,7 @@ static void demo_all_points_in_8x8_matrix_sender(void) {
 /* ================================================================== */
 
 static void demo_all_points_in_row_2_sender(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 16,
         .frequency  = 1,
         .sharpener  = 5,
@@ -492,7 +487,7 @@ static void demo_all_points_in_row_2_sender(void) {
 /* ================================================================== */
 
 static void demo_point_3_3_in_8x8_matrix(void) {
-    struct distance_sensor_can_config config = {
+    struct tof2can_config config = {
         .resolution = 64, // 8x8
         .frequency  = 1,
         .sharpener  = 5,

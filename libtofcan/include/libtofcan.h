@@ -22,7 +22,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "distance-sensor.h"
+#include "tof2can.h"
 
 struct libtofcan_batch {
     int16_t data[64];
@@ -53,7 +53,7 @@ struct libtofcan_msg {
  * function's scope. Copy the data instead.
  */
 extern void libtofcan_set_callbacks(
-    void (*sample)(int sensor, struct distance_sensor_can_sample *data),
+    void (*sample)(int sensor, struct tof2can_sample *data),
     void (*batch)(int sensor, struct libtofcan_batch *data, bool valid)
 );
 
@@ -61,7 +61,7 @@ extern void libtofcan_set_callbacks(
  * Prepares a CAN message to configure the sensor with the specified ID.
  */
 extern void libtofcan_config(int sensor, struct libtofcan_msg *msg,
-                             struct distance_sensor_can_config *config);
+                             struct tof2can_config *config);
 
 /*
  * Prepares a CAN message to request a sample or data batch from the
@@ -79,10 +79,8 @@ extern void libtofcan_receive(const struct libtofcan_msg *msg);
  * Generates a human-readable string describing the given configuration.
  * The string's maximum length should be at least 256.
  */
-extern void libtofcan_config_string(
-    struct distance_sensor_can_config *config,
-    char *str, int maxlen
-);
+extern void libtofcan_config_string(struct tof2can_config *config,
+                                    char *str, int maxlen);
 
 #ifdef __cplusplus
 }

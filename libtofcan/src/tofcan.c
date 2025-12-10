@@ -19,15 +19,15 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "distance-sensor.h"
+#include "tof2can.h"
 
 struct {
-    void (*sample)(int sensor, struct distance_sensor_can_sample *data);
+    void (*sample)(int sensor, struct tof2can_sample *data);
     void (*batch)(int sensor, struct libtofcan_batch *data, bool valid);
 } callbacks;
 
 void libtofcan_set_callbacks(
-    void (*sample)(int sensor, struct distance_sensor_can_sample *data),
+    void (*sample)(int sensor, struct tof2can_sample *data),
     void (*batch)(int sensor, struct libtofcan_batch *data, bool valid)
 ) {
     callbacks.sample = sample;
@@ -39,15 +39,15 @@ void libtofcan_set_callbacks(
 /* ================================================================== */
 
 void libtofcan_config(int sensor, struct libtofcan_msg *msg,
-                      struct distance_sensor_can_config *config) {
-    msg->id  = DISTANCE_SENSOR_CAN_CONFIG_MASK_ID | sensor;
+                      struct tof2can_config *config) {
+    msg->id  = TOF2CAN_CONFIG_MASK_ID | sensor;
     msg->rtr = false;
-    msg->len = DISTANCE_SENSOR_CAN_CONFIG_SIZE;
-    memcpy(msg->data, config, DISTANCE_SENSOR_CAN_CONFIG_SIZE);
+    msg->len = TOF2CAN_CONFIG_SIZE;
+    memcpy(msg->data, config, TOF2CAN_CONFIG_SIZE);
 }
 
 void libtofcan_request(int sensor, struct libtofcan_msg *msg) {
-    msg->id  = DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID | sensor;
+    msg->id  = TOF2CAN_SAMPLE_MASK_ID | sensor;
     msg->rtr = true;
     msg->len = 0;
 }
@@ -56,8 +56,7 @@ void libtofcan_request(int sensor, struct libtofcan_msg *msg) {
 /*                              receiver                              */
 /* ================================================================== */
 
-static void publish_sample(int sensor,
-                           struct distance_sensor_can_sample *data) {
+static void publish_sample(int sensor, struct tof2can_sample *data) {
     if(callbacks.sample)
         callbacks.sample(sensor, data);
 }
@@ -70,10 +69,10 @@ static void publish_batch(int sensor, struct libtofcan_batch *data,
 
 static void handle_sample(int sensor, const void *data, int len) {
     // check if message size is correct
-    if(len != sizeof(struct distance_sensor_can_sample))
+    if(len != sizeof(struct tof2can_sample))
         return;
 
-    struct distance_sensor_can_sample sample;
+    struct tof2can_sample sample;
     memcpy(&sample, data, sizeof(sample));
 
     publish_sample(sensor, &sample);
@@ -92,7 +91,7 @@ static void batch_reset(struct libtofcan_batch *batch,
 }
 
 static void batch_insert(struct libtofcan_batch *batch,
-                         struct distance_sensor_can_data_packet *packet) {
+                         struct tof2can_data_packet *packet) {
     const int buffer_length = sizeof(batch->data) / sizeof(int16_t);
     const int offset = packet->sequence_number * 3;
 
@@ -115,14 +114,14 @@ static void batch_insert(struct libtofcan_batch *batch,
 }
 
 static void handle_data_packet(int sensor, const void *data, int len) {
-    static struct libtofcan_batch batches[DISTANCE_SENSOR_MAX_COUNT];
+    static struct libtofcan_batch batches[TOF2CAN_MAX_SENSOR_COUNT];
 
     // check if message size is correct
-    if(len != sizeof(struct distance_sensor_can_data_packet))
+    if(len != sizeof(struct tof2can_data_packet))
         return;
 
     struct libtofcan_batch *batch = &batches[sensor];
-    struct distance_sensor_can_data_packet packet;
+    struct tof2can_data_packet packet;
     memcpy(&packet, data, sizeof(packet));
 
     // if packet has a new batch ID, reset the batch buffer
@@ -142,15 +141,15 @@ void libtofcan_receive(const struct libtofcan_msg *msg) {
     if(msg->rtr)
         return;
 
-    const int sensor   = msg->id % DISTANCE_SENSOR_MAX_COUNT;
+    const int sensor   = msg->id % TOF2CAN_MAX_SENSOR_COUNT;
     const int msg_type = msg->id - sensor;
 
     switch(msg_type) {
-        case DISTANCE_SENSOR_CAN_SAMPLE_MASK_ID:
+        case TOF2CAN_SAMPLE_MASK_ID:
             handle_sample(sensor, msg->data, msg->len);
             break;
 
-        case DISTANCE_SENSOR_CAN_DATA_PACKET_MASK_ID:
+        case TOF2CAN_DATA_PACKET_MASK_ID:
             handle_data_packet(sensor, msg->data, msg->len);
             break;
     }
@@ -160,7 +159,7 @@ void libtofcan_receive(const struct libtofcan_msg *msg) {
 /*                           config_string                            */
 /* ================================================================== */
 
-void libtofcan_config_string(struct distance_sensor_can_config *config,
+void libtofcan_config_string(struct tof2can_config *config,
                              char *str, int maxlen) {
     int result = (config->processing_mode >> 4) & 3;
     const char *result_str = (const char *[]) {

@@ -29,7 +29,7 @@
 #include <linux/can.h>
 
 #include "libtofcan.h"
-#include "distance-sensor.h"
+#include "tof2can.h"
 
 static int sockfd;
 
@@ -146,7 +146,7 @@ void *can_io_start(void *arg) {
 
     // configure sensor
     struct libtofcan_msg msg;
-    libtofcan_config(0, &msg, &(struct distance_sensor_can_config) {
+    libtofcan_config(0, &msg, &(struct tof2can_config) {
         .resolution = 64, // 8x8
         .frequency  = 5, // 5 Hz
         .sharpener  = 5,

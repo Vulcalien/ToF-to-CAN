@@ -145,8 +145,8 @@ static void grid_keypress(struct DisplayInput *input) {
         shown_sensor += change;
         if(shown_sensor < 0)
             shown_sensor = 0;
-        if(shown_sensor > DISTANCE_SENSOR_MAX_COUNT - 1)
-            shown_sensor = DISTANCE_SENSOR_MAX_COUNT - 1;
+        if(shown_sensor > TOF2CAN_MAX_SENSOR_COUNT - 1)
+            shown_sensor = TOF2CAN_MAX_SENSOR_COUNT - 1;
     }
 }
 
