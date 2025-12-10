@@ -22,12 +22,12 @@
 #include "tof2can.h"
 
 struct {
-    void (*sample)(int sensor, struct tof2can_sample *data);
+    void (*sample)(int sensor, struct libtofcan_sample *data);
     void (*batch)(int sensor, struct libtofcan_batch *data, bool valid);
 } callbacks;
 
 void libtofcan_set_callbacks(
-    void (*sample)(int sensor, struct tof2can_sample *data),
+    void (*sample)(int sensor, struct libtofcan_sample *data),
     void (*batch)(int sensor, struct libtofcan_batch *data, bool valid)
 ) {
     callbacks.sample = sample;
@@ -56,7 +56,7 @@ void libtofcan_request(int sensor, struct libtofcan_msg *msg) {
 /*                              receiver                              */
 /* ================================================================== */
 
-static void publish_sample(int sensor, struct tof2can_sample *data) {
+static void publish_sample(int sensor, struct libtofcan_sample *data) {
     if(callbacks.sample)
         callbacks.sample(sensor, data);
 }
@@ -69,13 +69,16 @@ static void publish_batch(int sensor, struct libtofcan_batch *data,
 
 static void handle_sample(int sensor, const void *data, int len) {
     // check if message size is correct
-    if(len != sizeof(struct tof2can_sample))
+    if(len != TOF2CAN_SAMPLE_SIZE)
         return;
 
     struct tof2can_sample sample;
     memcpy(&sample, data, sizeof(sample));
 
-    publish_sample(sensor, &sample);
+    publish_sample(sensor, &(struct libtofcan_sample) {
+        .distance = sample.distance,
+        .below_threshold = sample.below_threshold
+    });
 }
 
 static void batch_reset(struct libtofcan_batch *batch,
@@ -117,7 +120,7 @@ static void handle_data_packet(int sensor, const void *data, int len) {
     static struct libtofcan_batch batches[TOF2CAN_MAX_SENSOR_COUNT];
 
     // check if message size is correct
-    if(len != sizeof(struct tof2can_data_packet))
+    if(len != TOF2CAN_DATA_PACKET_SIZE)
         return;
 
     struct libtofcan_batch *batch = &batches[sensor];

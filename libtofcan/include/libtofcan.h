@@ -24,6 +24,11 @@ extern "C" {
 
 #include "tof2can.h"
 
+struct libtofcan_sample {
+    int16_t distance;
+    bool below_threshold;
+};
+
 struct libtofcan_batch {
     int16_t data[64];
     int data_length;
@@ -53,7 +58,7 @@ struct libtofcan_msg {
  * function's scope. Copy the data instead.
  */
 extern void libtofcan_set_callbacks(
-    void (*sample)(int sensor, struct tof2can_sample *data),
+    void (*sample)(int sensor, struct libtofcan_sample *data),
     void (*batch)(int sensor, struct libtofcan_batch *data, bool valid)
 );
 
