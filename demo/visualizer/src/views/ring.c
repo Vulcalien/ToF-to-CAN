@@ -34,6 +34,7 @@
 #define DIAGRAM_YC (DISPLAY_HEIGHT / 2)
 
 static struct libtofcan_ring ring;
+static double scale = 0.5;
 
 static int ring_init(void) {
     static int16_t diagram[DIAGRAM_SIZE];
@@ -68,14 +69,12 @@ static bool ring_update(SDL_Renderer *renderer) {
     if(!new_data)
         return false;
 
-#define D_SCALE 0.5
-
     for(int i = 0; i < DIAGRAM_SIZE; i++) {
         double angle = i * (2 * M_PI) / DIAGRAM_SIZE;
         int distance = ring.diagram[i];
 
-        int x = DIAGRAM_XC + cos(angle) * distance * D_SCALE + 0.5;
-        int y = DIAGRAM_YC + sin(angle) * distance * D_SCALE + 0.5;
+        int x = DIAGRAM_XC + cos(angle) * distance * scale + 0.5;
+        int y = DIAGRAM_YC + sin(angle) * distance * scale + 0.5;
 
         // draw a line from center to square
         SDL_SetRenderDrawColor(renderer, 0x20, 0x20, 0x20, 255);
@@ -97,6 +96,10 @@ static bool ring_update(SDL_Renderer *renderer) {
 }
 
 static void ring_keypress(struct DisplayInput *input) {
+    // update scale
+    if(input->down) scale -= 0.05;
+    if(input->up)   scale += 0.05;
+    if(scale < 0.05) scale = 0.05;
 }
 
 const struct View view_ring = {
