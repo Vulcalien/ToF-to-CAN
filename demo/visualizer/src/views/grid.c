@@ -31,6 +31,8 @@
 static int shown_sensor;
 static bool has_sensor_changed;
 
+static bool should_write_numbers = true;
+
 static int grid_init(void) {
     shown_sensor = 0;
     has_sensor_changed = true;
@@ -101,10 +103,11 @@ static bool grid_update(SDL_Renderer *renderer) {
             };
             SDL_RenderFillRect(renderer, &rect);
 
-            // write value number
-            int xc = GRID_XOFF + x * CELL_WIDTH  + CELL_WIDTH  / 2;
-            int yc = GRID_YOFF + y * CELL_HEIGHT + CELL_HEIGHT / 2;
-            write_value(value, color, xc, yc);
+            if(should_write_numbers) {
+                int xc = GRID_XOFF + x * CELL_WIDTH  + CELL_WIDTH  / 2;
+                int yc = GRID_YOFF + y * CELL_HEIGHT + CELL_HEIGHT / 2;
+                write_value(value, color, xc, yc);
+            }
         }
     }
 
@@ -148,6 +151,9 @@ static void grid_keypress(struct DisplayInput *input) {
         if(shown_sensor > TOF2CAN_MAX_SENSOR_COUNT - 1)
             shown_sensor = TOF2CAN_MAX_SENSOR_COUNT - 1;
     }
+
+    if(input->a)
+        should_write_numbers ^= 1;
 }
 
 const struct View view_grid = {
