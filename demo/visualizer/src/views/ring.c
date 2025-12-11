@@ -104,6 +104,9 @@ static void ring_keypress(struct DisplayInput *input) {
     if(input->down) scale -= 0.05;
     if(input->up)   scale += 0.05;
     if(scale < 0.05) scale = 0.05;
+
+    if(input->a)
+        libtofcan_ring_reset(&ring);
 }
 
 const struct View view_ring = {
