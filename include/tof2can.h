@@ -12,15 +12,15 @@ extern "C" {
 #define TOF2CAN_PROCMODE_AVG_IN_MATRIX (0 << 6 | 2 << 4)
 #define TOF2CAN_PROCMODE_ALL_IN_MATRIX (0 << 6 | 3 << 4)
 
-#define TOF2CAN_PROCMODE_MIN_IN_COLUMN(x) (1 << 6 | 0 << 4 | (x) & 7)
-#define TOF2CAN_PROCMODE_MAX_IN_COLUMN(x) (1 << 6 | 1 << 4 | (x) & 7)
-#define TOF2CAN_PROCMODE_AVG_IN_COLUMN(x) (1 << 6 | 2 << 4 | (x) & 7)
-#define TOF2CAN_PROCMODE_ALL_IN_COLUMN(x) (1 << 6 | 3 << 4 | (x) & 7)
+#define TOF2CAN_PROCMODE_MIN_IN_COLUMN(x) (1 << 6 | 0 << 4 | ((x) & 7))
+#define TOF2CAN_PROCMODE_MAX_IN_COLUMN(x) (1 << 6 | 1 << 4 | ((x) & 7))
+#define TOF2CAN_PROCMODE_AVG_IN_COLUMN(x) (1 << 6 | 2 << 4 | ((x) & 7))
+#define TOF2CAN_PROCMODE_ALL_IN_COLUMN(x) (1 << 6 | 3 << 4 | ((x) & 7))
 
-#define TOF2CAN_PROCMODE_MIN_IN_ROW(x) (2 << 6 | 0 << 4 | (x) & 7)
-#define TOF2CAN_PROCMODE_MAX_IN_ROW(x) (2 << 6 | 1 << 4 | (x) & 7)
-#define TOF2CAN_PROCMODE_AVG_IN_ROW(x) (2 << 6 | 2 << 4 | (x) & 7)
-#define TOF2CAN_PROCMODE_ALL_IN_ROW(x) (2 << 6 | 3 << 4 | (x) & 7)
+#define TOF2CAN_PROCMODE_MIN_IN_ROW(x) (2 << 6 | 0 << 4 | ((x) & 7))
+#define TOF2CAN_PROCMODE_MAX_IN_ROW(x) (2 << 6 | 1 << 4 | ((x) & 7))
+#define TOF2CAN_PROCMODE_AVG_IN_ROW(x) (2 << 6 | 2 << 4 | ((x) & 7))
+#define TOF2CAN_PROCMODE_ALL_IN_ROW(x) (2 << 6 | 3 << 4 | ((x) & 7))
 
 #define TOF2CAN_PROCMODE_POINT(x, y) (3 << 6 | ((y) & 7) << 3 | ((x) & 7))
 
