@@ -27,7 +27,7 @@
 
 #define DIAGRAM_SIZE 64
 
-#define RING_RADIUS 0
+#define RING_RADIUS 39
 #define RING_SENSOR_COUNT 10
 
 #define DIAGRAM_XC (DISPLAY_WIDTH / 2)
