@@ -19,16 +19,22 @@
 #include <math.h>
 
 void libtofcan_ring_config(struct libtofcan_ring *ring,
-                           int16_t *diagram, int diagram_size,
-                           int ring_radius) {
+                           struct libtofcan_ring_point *diagram,
+                           int diagram_size, int ring_radius,
+                           int max_age) {
     ring->diagram = diagram;
     ring->diagram_size = diagram_size;
     ring->radius = ring_radius;
+    ring->max_age = max_age;
 }
 
 void libtofcan_ring_reset(struct libtofcan_ring *ring) {
-    for(int i = 0; i < ring->diagram_size; i++)
-        ring->diagram[i] = -1;
+    for(int i = 0; i < ring->diagram_size; i++) {
+        ring->diagram[i] = (struct libtofcan_ring_point) {
+            .distance = -1,
+            .age = ring->max_age
+        };
+    }
 }
 
 struct Polar {
@@ -80,6 +86,17 @@ void libtofcan_ring_insert(struct libtofcan_ring *ring,
         get_absolute_polar(&point, &input, ring->radius, angle);
 
         int diagram_index = point.angle / angle_per_cell;
-        ring->diagram[diagram_index] = point.distance;
+        ring->diagram[diagram_index] = (struct libtofcan_ring_point) {
+            .distance = point.distance,
+            .age = 0
+        };
+    }
+
+    // increment age of diagram points and invalidate old ones
+    for(int i = 0; i < ring->diagram_size; i++) {
+        if(ring->diagram[i].age < ring->max_age)
+            ring->diagram[i].age++;
+        else
+            ring->diagram[i].distance = -1;
     }
 }

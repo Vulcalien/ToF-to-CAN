@@ -30,6 +30,8 @@
 #define RING_RADIUS 39
 #define RING_SENSOR_COUNT 10
 
+#define MAX_AGE (RING_SENSOR_COUNT * 3)
+
 #define DIAGRAM_XC (DISPLAY_WIDTH / 2)
 #define DIAGRAM_YC (DISPLAY_HEIGHT / 2)
 
@@ -37,8 +39,10 @@ static struct libtofcan_ring ring;
 static double scale = 0.5;
 
 static int ring_init(void) {
-    static int16_t diagram[DIAGRAM_SIZE];
-    libtofcan_ring_config(&ring, diagram, DIAGRAM_SIZE, RING_RADIUS);
+    static struct libtofcan_ring_point diagram[DIAGRAM_SIZE];
+    libtofcan_ring_config(
+        &ring, diagram, DIAGRAM_SIZE, RING_RADIUS, MAX_AGE
+    );
     libtofcan_ring_reset(&ring);
 
     return 0;
@@ -71,7 +75,7 @@ static bool ring_update(SDL_Renderer *renderer) {
 
     for(int i = 0; i < DIAGRAM_SIZE; i++) {
         double angle = i * (2 * M_PI) / DIAGRAM_SIZE;
-        int distance = ring.diagram[i];
+        int distance = ring.diagram[i].distance;
 
         int x = DIAGRAM_XC + cos(angle) * distance * scale + 0.5;
         int y = DIAGRAM_YC + sin(angle) * distance * scale + 0.5;

@@ -24,15 +24,25 @@ extern "C" {
 
 #include "libtofcan.h"
 
-struct libtofcan_ring {
-    int16_t *diagram;
-    int diagram_size;
-    int radius;
+struct libtofcan_ring_point {
+    int16_t distance;
+    int16_t age;
 };
 
+struct libtofcan_ring {
+    struct libtofcan_ring_point *diagram;
+    int diagram_size;
+    int radius;
+    int max_age;
+};
+
+// * diagram_size: number of data points (size of 'diagram' array)
+// * ring_radius: distance from ring center to sensors
+// * max_age: number of calls to 'libtofcan_ring_insert' points survive
 extern void libtofcan_ring_config(struct libtofcan_ring *ring,
-                                  int16_t *diagram, int diagram_size,
-                                  int ring_radius);
+                                  struct libtofcan_ring_point *diagram,
+                                  int diagram_size, int ring_radius,
+                                  int max_age);
 
 extern void libtofcan_ring_reset(struct libtofcan_ring *ring);
 
