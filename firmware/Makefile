@@ -12,7 +12,6 @@ clean: submodules/apps/tof-app
 
 distclean: submodules/apps/tof-app
 	$(MAKE) -C submodules/nuttx distclean
-	cd config/tof-l431-nsh && cp -f defconfig.src defconfig
 	-rm submodules/apps/tof-app $(ROMFS) $(RCS)
 
 genromfs:
