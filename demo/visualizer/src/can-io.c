@@ -151,7 +151,7 @@ void *can_io_start(void *arg) {
         .frequency  = 5, // 5 Hz
         .sharpener  = 5,
 
-        .processing_mode = 0x30, // all points in matrix
+        .processing_mode = TOF2CAN_PROCMODE_ALL_IN_ROW(3),
         .threshold       = 0, // ignored
         .threshold_delay = 0, // ignored
 
