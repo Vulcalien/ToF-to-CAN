@@ -77,6 +77,10 @@ void libtofcan_ring_insert(struct libtofcan_ring *ring,
     double angle_per_cell = (2 * M_PI) / ring->diagram_size;
 
     for(int i = 0; i < batch->data_length; i++) {
+        // ignore invalid points, leaving any previous data intact
+        if(batch->data[i] == -1)
+            continue;
+
         struct Polar input = {
             .angle = angle_of_point(i, batch->data_length),
             .distance = batch->data[i]
