@@ -26,19 +26,7 @@
 
 bool debug_flag = false;
 
-static int cmd_help(char *arg0) {
-    printf("Usage: %s [command] [args]\n", arg0);
-    printf("List of available commands:\n");
-    printf("    set-id      sets the sensor ID\n");
-    printf("    debug       toggles debug messages\n");
-    printf("    exit        exits the program\n");
-    printf("    help        prints this help message\n");
-    return 0;
-}
-
-int tof_app_main(int argc, char *argv[]) {
-    char *arg0 = (argc > 0 ? argv[0] : "<PROGRAM-NAME>");
-
+static void init(void) {
     while(tof_init())
         printf("[Main] ToF initialization failed: retrying\n");
     while(processing_init())
@@ -54,7 +42,22 @@ int tof_app_main(int argc, char *argv[]) {
         sscanf(sensor_id_var, "%d", &id);
         can_io_set_sensor_id(id);
     }
+}
 
+static int cmd_help(char *arg0) {
+    printf("Usage: %s [command] [args]\n", arg0);
+    printf("List of available commands:\n");
+    printf("    set-id      sets the sensor ID\n");
+    printf("    debug       toggles debug messages\n");
+    printf("    exit        exits the program\n");
+    printf("    help        prints this help message\n");
+    return 0;
+}
+
+int tof_app_main(int argc, char *argv[]) {
+    init();
+
+    char *arg0 = (argc > 0 ? argv[0] : "<PROGRAM-NAME>");
     cmd_help(arg0);
     while(true) {
         static char cmd[128];
