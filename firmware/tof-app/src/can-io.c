@@ -80,6 +80,7 @@ static void handle_message(const struct can_msg_s *msg) {
             }
 
             printf("\n=== Configuring ===\n");
+            board_userled(BOARD_GREEN_LED, true);
             sender_pause(); // pause sender thread
 
             struct tof2can_config *config =
@@ -100,6 +101,7 @@ static void handle_message(const struct can_msg_s *msg) {
             can_io_set_transmit_condition(config->transmit_condition);
 
             sender_resume(); // resume sender thread
+            board_userled(BOARD_GREEN_LED, false);
             printf("\n"); // write blank line as separator
         } break;
 
@@ -311,10 +313,12 @@ static void *sender_run(void *arg) {
             continue;
 
         // send CAN message(s)
+        board_userled(BOARD_RED_LED, true);
         if(buffer_length == 1)
             write_single_sample(buffer[0], below_threshold);
         else
             write_data_packets(buffer, buffer_length);
+        board_userled(BOARD_RED_LED, false);
     }
     return NULL;
 }

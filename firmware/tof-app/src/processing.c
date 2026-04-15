@@ -151,10 +151,6 @@ static void update_threshold_status(void) {
     } else {
         data.threshold_event = false;
     }
-
-    // update status of LEDs: green=below threshold, red=threshold event
-    board_userled(BOARD_GREEN_LED, data.below_threshold);
-    board_userled(BOARD_RED_LED,   data.threshold_event);
 }
 
 static int update_data(void) {

@@ -55,7 +55,10 @@ static int cmd_help(char *arg0) {
 }
 
 int tof_app_main(int argc, char *argv[]) {
+    board_userled(BOARD_GREEN_LED, true);
+    board_userled(BOARD_RED_LED, true);
     init();
+    board_userled(BOARD_RED_LED, false);
 
     char *arg0 = (argc > 0 ? argv[0] : "<PROGRAM-NAME>");
     cmd_help(arg0);
