@@ -30,14 +30,6 @@
 #include "processing.h"
 #include "tof.h"
 
-#define TIMING_ON_DEMAND  0
-#define TIMING_CONTINUOUS 1
-
-#define CONDITION_ALWAYS_TRUE           0
-#define CONDITION_BELOW_THRESHOLD_EVENT 1
-#define CONDITION_ABOVE_THRESHOLD_EVENT 2
-#define CONDITION_ANY_THRESHOLD_EVENT   3
-
 static int can_fd;
 static int sensor_id;
 
@@ -163,7 +155,7 @@ static void sender_resume(void) {
     processing_resume();
 
     // if timing is continuous, unblock the sender waiting for a request
-    if(transmit_timing == TIMING_CONTINUOUS)
+    if(transmit_timing == TOF2CAN_TIMING_CONTINUOUS)
         sem_post(&request_data_message);
 }
 
@@ -256,16 +248,16 @@ static bool should_transmit(int buffer_length,
         return true;
 
     switch(transmit_condition) {
-        case CONDITION_ALWAYS_TRUE:
+        case TOF2CAN_CONDITION_ALWAYS_TRUE:
             return true;
 
-        case CONDITION_BELOW_THRESHOLD_EVENT:
+        case TOF2CAN_CONDITION_BELOW_THRESHOLD_EVENT:
             return threshold_event && below_threshold;
 
-        case CONDITION_ABOVE_THRESHOLD_EVENT:
+        case TOF2CAN_CONDITION_ABOVE_THRESHOLD_EVENT:
             return threshold_event && !below_threshold;
 
-        case CONDITION_ANY_THRESHOLD_EVENT:
+        case TOF2CAN_CONDITION_ANY_THRESHOLD_EVENT:
             return threshold_event;
     }
     return false;
@@ -305,7 +297,7 @@ static void *sender_run(void *arg) {
 
     while(true) {
         // if paused or timing is on-demand, wait for a request
-        if(is_sender_paused || transmit_timing == TIMING_ON_DEMAND)
+        if(is_sender_paused || transmit_timing == TOF2CAN_TIMING_ON_DEMAND)
             sem_wait(&request_data_message);
 
         // retrieve data; on failure, drop the request

@@ -24,6 +24,14 @@ extern "C" {
 
 #define TOF2CAN_PROCMODE_POINT(x, y) (3 << 6 | ((y) & 7) << 3 | ((x) & 7))
 
+#define TOF2CAN_TIMING_ON_DEMAND  0
+#define TOF2CAN_TIMING_CONTINUOUS 1
+
+#define TOF2CAN_CONDITION_ALWAYS_TRUE           0
+#define TOF2CAN_CONDITION_BELOW_THRESHOLD_EVENT 1
+#define TOF2CAN_CONDITION_ABOVE_THRESHOLD_EVENT 2
+#define TOF2CAN_CONDITION_ANY_THRESHOLD_EVENT   3
+
 /*
  * struct tof2can_config (size = 8)
  *
