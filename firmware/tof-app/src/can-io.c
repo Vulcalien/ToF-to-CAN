@@ -241,13 +241,7 @@ static int write_data_packets(int16_t *data, int length) {
     return 0;
 }
 
-static bool should_transmit(int buffer_length,
-                            bool below_threshold,
-                            bool threshold_event) {
-    // if there are multiple data points, ignore transmit condition
-    if(buffer_length > 1)
-        return true;
-
+static bool should_transmit(bool below_threshold, bool threshold_event) {
     switch(transmit_condition) {
         case TOF2CAN_CONDITION_ALWAYS_TRUE:
             return true;
@@ -289,7 +283,7 @@ static int retrieve_data(int16_t *buffer, int *length,
         }
 
         // if data should be transmitted, break the loop
-        if(should_transmit(*length, *below_threshold, threshold_event))
+        if(should_transmit(*below_threshold, threshold_event))
             break;
     }
     return 0;
