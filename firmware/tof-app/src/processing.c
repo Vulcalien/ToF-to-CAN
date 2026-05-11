@@ -91,10 +91,8 @@ static void dump_data(int16_t *matrix) {
         printf("%d, ", data.buffer[i]);
     printf("\n");
 
-    if(data.buffer_length == 1) {
-        printf("Below threshold: %d\n", data.below_threshold);
-        printf("Threshold event: %d\n", data.threshold_event);
-    }
+    printf("Below threshold: %d\n", data.below_threshold);
+    printf("Threshold event: %d\n", data.threshold_event);
     printf("\n");
 }
 
