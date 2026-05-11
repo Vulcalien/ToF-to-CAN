@@ -24,6 +24,11 @@ extern "C" {
 
 #define TOF2CAN_PROCMODE_POINT(x, y) (3 << 6 | ((y) & 7) << 3 | ((x) & 7))
 
+#define TOF2CAN_THRESHOLD_FOCUS_MIN     0
+#define TOF2CAN_THRESHOLD_FOCUS_MAX     1
+#define TOF2CAN_THRESHOLD_FOCUS_AVERAGE 2
+#define TOF2CAN_THRESHOLD_FOCUS_SUM     3
+
 #define TOF2CAN_TIMING_ON_DEMAND  0
 #define TOF2CAN_TIMING_CONTINUOUS 1
 
@@ -93,6 +98,9 @@ extern "C" {
  *     equal to (threshold_delay / frequency) seconds. Ignored if
  *     *processing_mode* specifies multiple distance samples as result.
  *
+ * threshold_focus:
+ *     TODO
+ *
  * transmit_timing:
  *     When the sensor should transmit new data.
  *     If set to on-demand mode (0), the sensor will wait for the user
@@ -124,9 +132,10 @@ struct tof2can_config {
     uint8_t sharpener;  // 0...99%
 
     // processing settings
-    uint8_t  processing_mode; // see documentation above
-    uint16_t threshold;       // 0...4000mm
-    uint8_t  threshold_delay; // 0...255
+    uint8_t  processing_mode;     // see documentation above
+    uint16_t threshold;           // 0...4000mm
+    uint8_t  threshold_delay;     // 0...255
+    uint8_t  threshold_focus : 2; // 0=min, 1=max, 2=average, 3=sum
 
     // data transmission
     uint8_t transmit_timing    : 1; // 0=on-demand, 1=continuous

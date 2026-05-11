@@ -35,3 +35,4 @@ extern int processing_get_data(int16_t *buffer,
 extern int processing_set_mode(int mode);
 extern int processing_set_threshold(int threshold);
 extern int processing_set_threshold_delay(int delay);
+extern int processing_set_threshold_focus(int focus);

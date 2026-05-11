@@ -24,6 +24,7 @@
 #include <pthread.h>
 #include <semaphore.h>
 
+#include "tof2can.h"
 #include "tof.h"
 
 #define AREA_MATRIX 0
@@ -54,6 +55,7 @@ static int result_selector;
 
 static int threshold;
 static int threshold_delay;
+static int threshold_focus;
 
 static bool is_paused = true; // after startup, device is idle
 
@@ -130,11 +132,11 @@ static int process_matrix(int16_t *matrix, uint8_t *status,
     return (*count == 0);
 }
 
-static void update_threshold_status(void) {
+static void update_threshold_status(int focus) {
     static bool previous    = false;
     static int  consistency = 0;
 
-    const bool current = (data.buffer[0] < threshold);
+    const bool current = (focus < threshold);
     if(current == previous)
         consistency++;
     else
@@ -200,9 +202,26 @@ static int update_data(void) {
         } break;
     }
 
-    // if there is only one data value, update threshold status
-    if(data.buffer_length == 1)
-        update_threshold_status();
+    // update threshold status
+    int focus = 0;
+    switch(threshold_focus) {
+        case TOF2CAN_THRESHOLD_FOCUS_MIN:
+            focus = min;
+            break;
+
+        case TOF2CAN_THRESHOLD_FOCUS_MAX:
+            focus = max;
+            break;
+
+        case TOF2CAN_THRESHOLD_FOCUS_AVERAGE:
+            focus = (sum / count);
+            break;
+
+        case TOF2CAN_THRESHOLD_FOCUS_SUM:
+            focus = sum;
+            break;
+    }
+    update_threshold_status(focus);
 
     // unlock data mutex
     if(pthread_mutex_unlock(&data.mutex)) {
@@ -380,6 +399,19 @@ int processing_set_threshold_delay(int delay) {
     printf(
         "[Processing] setting threshold delay to %d (err=%d)\n",
         delay, err
+    );
+    return err;
+}
+
+int processing_set_threshold_focus(int focus) {
+    int err = 0;
+
+    if(focus >= 0) threshold_focus = focus;
+    else err = 1;
+
+    printf(
+        "[Processing] setting threshold focus to %d (err=%d)\n",
+        focus, err
     );
     return err;
 }

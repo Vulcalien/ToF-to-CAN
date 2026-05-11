@@ -87,6 +87,7 @@ static void handle_message(const struct can_msg_s *msg) {
             processing_set_mode(config->processing_mode);
             processing_set_threshold(config->threshold);
             processing_set_threshold_delay(config->threshold_delay);
+            processing_set_threshold_focus(config->threshold_focus);
 
             // set transmission settings
             can_io_set_transmit_timing(config->transmit_timing);
