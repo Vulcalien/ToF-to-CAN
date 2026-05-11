@@ -90,15 +90,13 @@ extern "C" {
  *
  * threshold:
  *     The distance to use as threshold value for calculating the
- *     *below_threshold* value. Ignored if *processing_mode* specifies
- *     multiple distance samples as result.
+ *     *below_threshold* value.
  *
  * threshold_delay:
- *     Number of internal iterations that the distance needs to be
+ *     Number of internal iterations that the focus distance needs to be
  *     consistently below or above the threshold before updating the
  *     *below_threshold* value. The corresponding amount of time is
- *     equal to (threshold_delay / frequency) seconds. Ignored if
- *     *processing_mode* specifies multiple distance samples as result.
+ *     equal to (threshold_delay / frequency) seconds.
  *
  * threshold_focus:
  *     TODO
@@ -123,9 +121,6 @@ extern "C" {
  *     Threshold events happen when the *below_threshold* value changes:
  *     - if below_threshold = true, a 'below threshold event' happens
  *     - if below_threshold = false, an 'above threshold event' happens
- *
- *     Ignored if *processing_mode* specifies multiple distance samples
- *     as result.
  */
 
 #define TOF2CAN_CONFIG_SIZE 8
