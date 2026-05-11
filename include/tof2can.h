@@ -33,9 +33,11 @@ extern "C" {
 #define TOF2CAN_TIMING_CONTINUOUS 1
 
 #define TOF2CAN_CONDITION_ALWAYS_TRUE           0
-#define TOF2CAN_CONDITION_BELOW_THRESHOLD_EVENT 1
-#define TOF2CAN_CONDITION_ABOVE_THRESHOLD_EVENT 2
+#define TOF2CAN_CONDITION_BELOW_THRESHOLD       1
+#define TOF2CAN_CONDITION_ABOVE_THRESHOLD       2
 #define TOF2CAN_CONDITION_ANY_THRESHOLD_EVENT   3
+#define TOF2CAN_CONDITION_BELOW_THRESHOLD_EVENT 4
+#define TOF2CAN_CONDITION_ABOVE_THRESHOLD_EVENT 5
 
 /*
  * struct tof2can_config (size = 8)
@@ -112,9 +114,11 @@ extern "C" {
  *     The condition that needs to be satisfied for the sensor to
  *     transmit data. Allowed values:
  *     - 0=always true
- *     - 1=below threshold event
- *     - 2=above threshold event
+ *     - 1=below threshold
+ *     - 2=above threshold
  *     - 3=any threshold event
+ *     - 4=below threshold event
+ *     - 5=above threshold event
  *
  *     Threshold events happen when the *below_threshold* value changes:
  *     - if below_threshold = true, a 'below threshold event' happens
@@ -139,7 +143,7 @@ struct tof2can_config {
 
     // data transmission
     uint8_t transmit_timing    : 1; // 0=on-demand, 1=continuous
-    uint8_t transmit_condition : 2; // see documentation above
+    uint8_t transmit_condition : 3; // see documentation above
 };
 
 /*

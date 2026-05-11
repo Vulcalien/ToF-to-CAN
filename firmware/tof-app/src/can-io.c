@@ -252,14 +252,20 @@ static bool should_transmit(int buffer_length,
         case TOF2CAN_CONDITION_ALWAYS_TRUE:
             return true;
 
+        case TOF2CAN_CONDITION_BELOW_THRESHOLD:
+            return below_threshold;
+
+        case TOF2CAN_CONDITION_ABOVE_THRESHOLD:
+            return !below_threshold;
+
+        case TOF2CAN_CONDITION_ANY_THRESHOLD_EVENT:
+            return threshold_event;
+
         case TOF2CAN_CONDITION_BELOW_THRESHOLD_EVENT:
             return threshold_event && below_threshold;
 
         case TOF2CAN_CONDITION_ABOVE_THRESHOLD_EVENT:
             return threshold_event && !below_threshold;
-
-        case TOF2CAN_CONDITION_ANY_THRESHOLD_EVENT:
-            return threshold_event;
     }
     return false;
 }
