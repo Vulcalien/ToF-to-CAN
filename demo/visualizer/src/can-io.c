@@ -154,9 +154,10 @@ void *can_io_start(void *arg) {
         .processing_mode = TOF2CAN_PROCMODE_ALL_IN_ROW(3),
         .threshold       = 0, // ignored
         .threshold_delay = 0, // ignored
+        .threshold_focus = 0, // ignored
 
-        .transmit_timing    = 1, // continuous
-        .transmit_condition = 0, // ignored (multiple samples)
+        .transmit_timing    = TOF2CAN_TIMING_CONTINUOUS,
+        .transmit_condition = TOF2CAN_CONDITION_ALWAYS_TRUE
     });
     can_write(&msg);
 
