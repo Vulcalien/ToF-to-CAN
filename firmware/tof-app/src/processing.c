@@ -21,8 +21,6 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
-#include <pthread.h>
-#include <semaphore.h>
 
 #include "tof2can.h"
 #include "tof.h"
@@ -38,8 +36,7 @@
 #define SELECTOR_ALL     3
 
 static struct {
-    pthread_mutex_t mutex;
-    sem_t           available;
+    bool available;
 
     int     buffer_length;
     int16_t buffer[PROCESSING_DATA_MAX_LENGTH];
@@ -56,23 +53,6 @@ static int result_selector;
 static int threshold;
 static int threshold_delay;
 static int threshold_focus;
-
-static bool is_paused = true; // after startup, device is idle
-
-int processing_init(void) {
-    // initialize data mutex
-    if(pthread_mutex_init(&data.mutex, NULL)) {
-        printf("[Processing] error initializing data mutex\n");
-        return 1;
-    }
-
-    // initialize data available semaphore
-    if(sem_init(&data.available, 0, 0)) {
-        printf("[Processing] error initializing data available semaphore\n");
-        return 1;
-    }
-    return 0;
-}
 
 static void dump_data(int16_t *matrix) {
     printf("=== DATA DUMP ===\n");
@@ -168,12 +148,6 @@ static int update_data(void) {
         return 1;
     }
 
-    // lock data mutex
-    if(pthread_mutex_lock(&data.mutex)) {
-        printf("[Processing] error trying to lock data mutex\n");
-        return 1;
-    }
-
     // update data based on result selector
     switch(result_selector) {
         case SELECTOR_MIN: {
@@ -221,12 +195,6 @@ static int update_data(void) {
     }
     update_threshold_status(focus);
 
-    // unlock data mutex
-    if(pthread_mutex_unlock(&data.mutex)) {
-        printf("[Processing] error trying to unlock data mutex\n");
-        return 1;
-    }
-
     // dump ToF matrix and processed data
     if(debug_flag)
         dump_data(matrix);
@@ -234,71 +202,27 @@ static int update_data(void) {
     return 0;
 }
 
-static void *processing_run(void *arg) {
-    printf("[Processing] thread started\n");
-
-    while(true) {
-        // if not paused, try to update data
-        if(!is_paused && update_data() == 0) {
-            // get semaphore's current value
-            int sem_value;
-            sem_getvalue(&data.available, &sem_value);
-
-            // Since old data is overwritten by new data, the maximum
-            // value of the semaphore is 1: only increase its value if
-            // the current value is 0.
-            if(sem_value == 0)
-                sem_post(&data.available);
-        }
-
-        // wait 1ms
-        usleep(1000);
-    }
-    return NULL;
-}
-
-int processing_start(void) {
-    pthread_t thread;
-    if(pthread_create(&thread, NULL, processing_run, NULL)) {
-        printf("[Processing] error creating thread\n");
-        return 1;
-    }
-    return 0;
+void processing_run(void) {
+    if(!update_data())
+        data.available = true;
 }
 
 void processing_pause(void) {
-    if(is_paused)
-        return;
-
-    is_paused = true;
-    usleep(10000); // wait 10ms to ensure no data is being processed
     tof_stop_ranging();
-
-    // invalidate data, if it was marked available
-    sem_trywait(&data.available);
+    data.available = false; // invalidate data
 }
 
 void processing_resume(void) {
-    if(!is_paused)
-        return;
-
     tof_start_ranging();
-    is_paused = false;
 }
 
 int processing_get_data(int16_t *buffer,
                         int *length,
                         bool *below_threshold,
                         bool *threshold_event) {
-    // if data is available, consume it, otherwise return an error
-    if(sem_trywait(&data.available))
+    // check if data is available
+    if(!data.available)
         return 1;
-
-    // lock data mutex
-    if(pthread_mutex_lock(&data.mutex)) {
-        printf("[Processing] error trying to lock data mutex\n");
-        return 1;
-    }
 
     // copy data to the given pointers
     memcpy(buffer, data.buffer, data.buffer_length * sizeof(int16_t));
@@ -306,11 +230,7 @@ int processing_get_data(int16_t *buffer,
     *below_threshold = data.below_threshold;
     *threshold_event = data.threshold_event;
 
-    // unlock data mutex
-    if(pthread_mutex_unlock(&data.mutex)) {
-        printf("[Processing] error trying to unlock data mutex\n");
-        return 1;
-    }
+    data.available = false;
     return 0;
 }
 

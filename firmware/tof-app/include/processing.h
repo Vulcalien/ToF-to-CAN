@@ -21,8 +21,7 @@
 
 #define PROCESSING_DATA_MAX_LENGTH 64
 
-extern int processing_init(void);
-extern int processing_start(void);
+extern void processing_run(void);
 
 extern void processing_pause(void);
 extern void processing_resume(void);

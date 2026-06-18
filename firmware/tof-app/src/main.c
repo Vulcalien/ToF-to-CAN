@@ -29,11 +29,8 @@ bool debug_flag = false;
 static void init(void) {
     while(tof_init())
         printf("[Main] ToF initialization failed: retrying\n");
-    while(processing_init())
-        printf("[Main] Processing initialization failed: retrying\n");
 
     can_io_start();
-    processing_start();
 
     // if SENSOR_ID environment variable is set, use it as sensor ID
     char *sensor_id_var = getenv("SENSOR_ID");

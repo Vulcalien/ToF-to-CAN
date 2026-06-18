@@ -283,6 +283,10 @@ static void *can_io_run(void *arg) {
     printf("[CAN-IO] thread started\n");
 
     while(true) {
+        // TODO obviously this isn't the right place to call
+        // 'processing_run'. This is temporary.
+        processing_run();
+
         receiver_run();
         sender_run();
         usleep(1000); // wait 1ms
