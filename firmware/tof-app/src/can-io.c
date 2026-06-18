@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <sys/ioctl.h>
 #include <nuttx/can/can.h>
 
@@ -36,10 +35,7 @@ static int sensor_id;
 static int transmit_timing;
 static int transmit_condition;
 
-static sem_t request_data_message;
-
-static void sender_pause(void);
-static void sender_resume(void);
+static int data_requests = 0;
 
 /* ================================================================== */
 /*                              Receiver                              */
@@ -73,7 +69,8 @@ static void handle_message(const struct can_msg_s *msg) {
 
             printf("\n=== Configuring ===\n");
             board_userled(BOARD_GREEN_LED, true);
-            sender_pause(); // pause sender thread
+            processing_pause();
+            data_requests = 0; // drop all data requests
 
             struct tof2can_config *config =
                 (struct tof2can_config *) &msg->cm_data;
@@ -93,7 +90,7 @@ static void handle_message(const struct can_msg_s *msg) {
             can_io_set_transmit_timing(config->transmit_timing);
             can_io_set_transmit_condition(config->transmit_condition);
 
-            sender_resume(); // resume sender thread
+            processing_resume();
             board_userled(BOARD_GREEN_LED, false);
             printf("\n"); // write blank line as separator
         } break;
@@ -102,63 +99,34 @@ static void handle_message(const struct can_msg_s *msg) {
         case TOF2CAN_DATA_PACKET_MASK_ID: {
             // if RTR bit is set, request a data message
             if(msg->cm_hdr.ch_rtr)
-                sem_post(&request_data_message);
+                data_requests++;
         } break;
     }
 }
 
-static void *receiver_run(void *arg) {
-    printf("[CAN-IO] receiver thread started\n");
-
+static void receiver_run(void) {
     static char buffer[RECEIVER_BUFFER_SIZE];
-    while(true) {
-        int offset = 0;
+    int offset = 0;
 
-        // read CAN message(s)
-        int nbytes = read(can_fd, buffer, RECEIVER_BUFFER_SIZE);
-        if(nbytes < 0) {
-            printf("[CAN-IO] error reading from CAN device\n");
-            continue;
-        }
+    // read CAN message(s)
+    int nbytes = read(can_fd, buffer, RECEIVER_BUFFER_SIZE);
+    if(nbytes < 0)
+        return;
 
-        // handle CAN message(s)
-        while(offset < nbytes) {
-            struct can_msg_s *msg = (struct can_msg_s *) &buffer[offset];
-            handle_message(msg);
+    // handle CAN message(s)
+    while(offset < nbytes) {
+        struct can_msg_s *msg = (struct can_msg_s *) &buffer[offset];
+        handle_message(msg);
 
-            // move buffer offset forward
-            int msglen = CAN_MSGLEN(msg->cm_hdr.ch_dlc);
-            offset += msglen;
-        }
+        // move buffer offset forward
+        int msglen = CAN_MSGLEN(msg->cm_hdr.ch_dlc);
+        offset += msglen;
     }
-    return NULL;
 }
 
 /* ================================================================== */
 /*                               Sender                               */
 /* ================================================================== */
-
-static bool is_sender_paused = true; // after startup, device is idle
-
-static void sender_pause(void) {
-    processing_pause();
-
-    // drop all data message requests
-    while(sem_trywait(&request_data_message) == 0);
-
-    // pause sender thread
-    is_sender_paused = true;
-    usleep(10000); // wait 10ms to ensure the sender blocks
-}
-
-static void sender_resume(void) {
-    is_sender_paused = false;
-    processing_resume();
-
-    // if timing is continuous, unblock the sender waiting for a request
-    if(transmit_timing == TOF2CAN_TIMING_CONTINUOUS)
-        sem_post(&request_data_message);
-}
 
 static int write_single_sample(int16_t distance, bool below_threshold) {
     struct can_msg_s msg;
@@ -264,56 +232,35 @@ static bool should_transmit(bool below_threshold, bool threshold_event) {
     return false;
 }
 
-static int retrieve_data(int16_t *buffer, int *length,
-                         bool *below_threshold) {
-    while(true) {
-        // if sender was paused while waiting, do not retrieve data
-        if(is_sender_paused)
-            return 1;
+static int retrieve_data(int16_t *buffer, int *length, bool *below_thd) {
+    bool thd_event;
+    if(processing_get_data(buffer, length, below_thd, &thd_event))
+        return 1;
 
-        bool threshold_event;
-        int err = processing_get_data(
-            buffer, length, below_threshold, &threshold_event
-        );
-
-        // if data was not available, wait some time and try again
-        if(err) {
-            usleep(1000); // wait 1ms
-            continue;
-        }
-
-        // if data should be transmitted, break the loop
-        if(should_transmit(*below_threshold, threshold_event))
-            break;
-    }
-    return 0;
+    // check if data meets the transmit condition
+    return !should_transmit(*below_thd, thd_event);
 }
 
-static void *sender_run(void *arg) {
-    printf("[CAN-IO] sender thread started\n");
-
+static void sender_run(void) {
     static int16_t buffer[PROCESSING_DATA_MAX_LENGTH];
     int buffer_length;
     bool below_threshold;
 
-    while(true) {
-        // if paused or timing is on-demand, wait for a request
-        if(is_sender_paused || transmit_timing == TOF2CAN_TIMING_ON_DEMAND)
-            sem_wait(&request_data_message);
+    // if timing is on-demand and there are no data requests, do nothing
+    if(transmit_timing == TOF2CAN_TIMING_ON_DEMAND && data_requests == 0)
+        return;
 
-        // retrieve data; on failure, drop the request
-        if(retrieve_data(buffer, &buffer_length, &below_threshold))
-            continue;
+    // try to retrieve data
+    if(retrieve_data(buffer, &buffer_length, &below_threshold))
+        return;
 
-        // send CAN message(s)
-        board_userled(BOARD_RED_LED, true);
-        if(buffer_length == 1)
-            write_single_sample(buffer[0], below_threshold);
-        else
-            write_data_packets(buffer, buffer_length);
-        board_userled(BOARD_RED_LED, false);
-    }
-    return NULL;
+    // send CAN message(s)
+    board_userled(BOARD_RED_LED, true);
+    if(buffer_length == 1)
+        write_single_sample(buffer[0], below_threshold);
+    else
+        write_data_packets(buffer, buffer_length);
+    board_userled(BOARD_RED_LED, false);
 }
 
 /* ================================================================== */
@@ -336,9 +283,20 @@ static inline void print_bit_timing(int fd) {
     }
 }
 
+static void *can_io_run(void *arg) {
+    printf("[CAN-IO] thread started\n");
+
+    while(true) {
+        receiver_run();
+        sender_run();
+        usleep(1000); // wait 1ms
+    }
+    return NULL;
+}
+
 int can_io_start(void) {
     // open CAN device in read-write mode
-    can_fd = open("/dev/can0", O_RDWR | O_NOCTTY);
+    can_fd = open("/dev/can0", O_RDWR | O_NONBLOCK);
     if(can_fd < 0) {
         perror("[CAN-IO] error opening /dev/can0");
         return 1;
@@ -348,22 +306,9 @@ int can_io_start(void) {
     // print bit timing information
     print_bit_timing(can_fd);
 
-    // initialize request data message semaphore
-    if(sem_init(&request_data_message, 0, 0)) {
-        printf("[CAN-IO] error initializing request data message semaphore\n");
-        return 1;
-    }
-
-    // create receiver and sender threads
-    pthread_t receiver_thread;
-    pthread_t sender_thread;
-
-    if(pthread_create(&receiver_thread, NULL, receiver_run, NULL)) {
-        printf("[CAN-IO] error creating receiver thread\n");
-        return 1;
-    }
-    if(pthread_create(&sender_thread, NULL, sender_run, NULL)) {
-        printf("[CAN-IO] error creating sender thread\n");
+    pthread_t thread;
+    if(pthread_create(&thread, NULL, can_io_run, NULL)) {
+        printf("[CAN-IO] error creating thread\n");
         return 1;
     }
     return 0;
