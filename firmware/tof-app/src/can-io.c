@@ -44,10 +44,6 @@ static int data_requests = 0;
 #define RECEIVER_BUFFER_SIZE (sizeof(struct can_msg_s))
 
 static void handle_message(const struct can_msg_s *msg) {
-    // TODO ignore confirmation messages???
-    /*if(msg->cm_hdr.tcf)*/
-        /*return;*/
-
     const int msg_sensor_id = msg->cm_hdr.ch_id % TOF2CAN_MAX_SENSOR_COUNT;
     const int msg_type      = msg->cm_hdr.ch_id - msg_sensor_id;
 
