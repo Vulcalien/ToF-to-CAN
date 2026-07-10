@@ -6,11 +6,13 @@
 /config/**/Make.dep
 /config/include/romfs.h
 
-# build files in 'tof-app'
-/tof-app/**/*.o
-/tof-app/**/.built
-/tof-app/**/.depend
-/tof-app/**/Make.dep
+# build files in 'apps'
+/apps/**/*.o
+/apps/**/.built
+/apps/**/.depend
+/apps/**/Make.dep
+/apps/Kconfig
+/apps/.kconfig
 
 # generated rcS file
 /etc/init.d/rcS

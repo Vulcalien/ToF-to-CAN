@@ -1,11 +1,11 @@
 include $(APPDIR)/Make.defs
 
-PROGNAME = tof_app
+PROGNAME = tof
 PRIORITY = SCHED_PRIORITY_MAX
 STACKSIZE = 2048
-MODULE = "tof_app"
+MODULE = "tof"
 
-CFLAGS += -Iinclude -I../../include
+CFLAGS += -Iinclude -I../../../include
 
 MAINSRC = src/main.c
 CSRCS += src/checks.c

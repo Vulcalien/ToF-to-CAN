@@ -51,7 +51,7 @@ static int cmd_help(char *arg0) {
     return 0;
 }
 
-int tof_app_main(int argc, char *argv[]) {
+int tof_main(int argc, char *argv[]) {
     board_userled(BOARD_GREEN_LED, true);
     board_userled(BOARD_RED_LED, true);
     init();

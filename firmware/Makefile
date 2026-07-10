@@ -6,13 +6,13 @@ RCS   := etc/init.d/rcS
 all: submodules/nuttx/.config genromfs
 	cd submodules/nuttx && $(MAKE) all && arm-none-eabi-size nuttx
 
-clean: submodules/apps/tof-app
+clean: submodules/apps/apps
 	$(MAKE) -C submodules/nuttx clean
 	-rm $(ROMFS) $(RCS)
 
-distclean: submodules/apps/tof-app
+distclean: submodules/apps/apps
 	$(MAKE) -C submodules/nuttx distclean
-	-rm submodules/apps/tof-app $(ROMFS) $(RCS)
+	-rm submodules/apps/apps $(ROMFS) $(RCS)
 
 genromfs:
 	@if [ "$(ID)" = "" ]; then\
@@ -39,19 +39,12 @@ reset:
         -c "adapter speed 50"   \
         -c init -c reset -c exit
 
-xprogram: all
-	scp submodules/nuttx/nuttx pi@$(RASPI):~/temp
-	ssh pi@$(RASPI) 'sudo openocd -f board/st_nucleo_l4.cfg -c "program temp/nuttx verify reset exit" '
-
-xreset:
-	ssh pi@$(RASPI) 'sudo openocd -f board/st_nucleo_l4.cfg -c init -c reset -c exit'
-
 qconfig: submodules/nuttx/.config
 	$(MAKE) -C submodules/nuttx qconfig
 	cp -v submodules/nuttx/.config config/tof-l431-nsh/defconfig
 
-submodules/apps/tof-app:
-	ln -sTf ../../tof-app submodules/apps/tof-app
+submodules/apps/apps:
+	ln -sTf ../../apps submodules/apps/apps
 
-submodules/nuttx/.config: submodules/apps/tof-app
+submodules/nuttx/.config: submodules/apps/apps
 	cd submodules/nuttx/tools && ./configure.sh ../../config/tof-l431-nsh

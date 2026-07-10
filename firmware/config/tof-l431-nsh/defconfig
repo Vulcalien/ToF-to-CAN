@@ -1750,6 +1750,11 @@ CONFIG_PROFILE_NONE=y
 #
 
 #
+# Custom Apps
+#
+CONFIG_CUSTOM_TOF_APP=y
+
+#
 # Audio Utility libraries
 #
 # CONFIG_AUDIOUTILS_FMSYNTH_LIB is not set
@@ -2270,7 +2275,6 @@ CONFIG_READLINE_CMD_HISTORY_LEN=16
 # CONFIG_TESTING_GETPRIME is not set
 # CONFIG_TESTING_TIMERJITTER is not set
 # CONFIG_TESTING_UNITY is not set
-CONFIG_TOF_APP=y
 
 #
 # Extra Tools
