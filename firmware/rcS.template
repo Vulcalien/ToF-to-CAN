@@ -7,4 +7,4 @@ mount -t binfs /bin
 set SENSOR_ID {{SENSOR_ID}}
 
 echo "Starting ToF app"
-tof_app start
+tof start

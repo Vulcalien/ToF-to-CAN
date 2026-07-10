@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sched.h>
 
 #include "processing.h"
 #include "can-io.h"
@@ -28,56 +29,71 @@ bool debug_flag = false;
 
 static void init(void) {
     while(tof_init())
-        printf("[Main] ToF initialization failed: retrying\n");
+        puts("[Main] ToF initialization failed: retrying");
 
-    can_io_start();
-
-    // if SENSOR_ID environment variable is set, use it as sensor ID
-    char *sensor_id_var = getenv("SENSOR_ID");
-    if(sensor_id_var) {
-        int id;
-        sscanf(sensor_id_var, "%d", &id);
-        can_io_set_sensor_id(id);
-    }
+    while(can_io_init())
+        puts("[Main] CAN IO initialization failed: retrying");
 }
 
-static int cmd_help(char *arg0) {
-    printf("Usage: %s [command] [args]\n", arg0);
-    printf("List of available commands:\n");
-    printf("    set-id      sets the sensor ID\n");
-    printf("    debug       toggles debug messages\n");
-    printf("    exit        exits the program\n");
-    printf("    help        prints this help message\n");
-    return 0;
-}
-
-int tof_main(int argc, char *argv[]) {
+static int task_main(int argc, char *argv[]) {
     board_userled(BOARD_GREEN_LED, true);
     board_userled(BOARD_RED_LED, true);
     init();
     board_userled(BOARD_RED_LED, false);
 
-    char *arg0 = (argc > 0 ? argv[0] : "<PROGRAM-NAME>");
-    cmd_help(arg0);
     while(true) {
-        static char cmd[128];
-        scanf("%s", cmd);
-
-        if(!strcmp(cmd, "set-id")) {
-            int id;
-            scanf("%d", &id);
-
-            can_io_set_sensor_id(id);
-        } else if(!strcmp(cmd, "debug")) {
-            debug_flag = !debug_flag;
-
-            const char *msg = (debug_flag ? "ENABLED" : "DISABLED");
-            printf("[Main] debug messages %s\n", msg);
-        } else if(!strcmp(cmd, "exit")) {
-            break;
-        } else {
-            cmd_help(arg0);
-        }
+        processing_run();
+        can_io_run();
     }
-    return 0;
+    return EXIT_SUCCESS;
+}
+
+/* ================================================================== */
+/*                              Commands                              */
+/* ================================================================== */
+
+static void print_help(const char *program) {
+    printf("Usage: %s [command]\n\n", program);
+    puts("Command can be:");
+    puts("  start           start the app");
+    puts("  debug           enable debugging info");
+    puts("  help            prints this help message");
+}
+
+// TODO take sensor IDs as input
+static int cmd_start(void) {
+    static bool started = false;
+    if(started) {
+        puts("[Main] already started");
+        return EXIT_FAILURE;
+    }
+
+    int id = task_create(
+        "tof-task", SCHED_PRIORITY_MAX, 4096,
+        task_main, NULL
+    );
+
+    return (id == 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+
+static int cmd_debug(void) {
+    // TODO
+    return EXIT_SUCCESS;
+}
+
+int tof_main(int argc, char *argv[]) {
+    if(argc < 2) {
+        print_help(argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    const char *cmd = argv[1];
+    if(!strcmp(cmd, "start"))
+        return cmd_start();
+
+    if(!strcmp(cmd, "debug"))
+        return cmd_debug();
+
+    print_help(argv[0]);
+    return EXIT_SUCCESS;
 }

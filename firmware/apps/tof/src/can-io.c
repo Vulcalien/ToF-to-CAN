@@ -21,7 +21,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <sys/ioctl.h>
 #include <nuttx/can/can.h>
 
@@ -279,22 +278,7 @@ static inline void print_bit_timing(int fd) {
     }
 }
 
-static void *can_io_run(void *arg) {
-    printf("[CAN-IO] thread started\n");
-
-    while(true) {
-        // TODO obviously this isn't the right place to call
-        // 'processing_run'. This is temporary.
-        processing_run();
-
-        receiver_run();
-        sender_run();
-        usleep(1000); // wait 1ms
-    }
-    return NULL;
-}
-
-int can_io_start(void) {
+int can_io_init(void) {
     // open CAN device in read-write mode
     can_fd = open("/dev/can0", O_RDWR | O_NONBLOCK);
     if(can_fd < 0) {
@@ -305,13 +289,12 @@ int can_io_start(void) {
 
     // print bit timing information
     print_bit_timing(can_fd);
-
-    pthread_t thread;
-    if(pthread_create(&thread, NULL, can_io_run, NULL)) {
-        printf("[CAN-IO] error creating thread\n");
-        return 1;
-    }
     return 0;
+}
+
+void can_io_run(void) {
+    receiver_run();
+    sender_run();
 }
 
 int can_io_set_sensor_id(int id) {

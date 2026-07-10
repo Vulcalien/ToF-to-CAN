@@ -19,7 +19,8 @@
 
 #include "main.h"
 
-extern int can_io_start(void);
+extern int can_io_init(void);
+extern void can_io_run(void);
 
 extern int can_io_set_sensor_id(int id);
 extern int can_io_set_transmit_timing(int timing);
