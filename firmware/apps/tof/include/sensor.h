@@ -21,11 +21,13 @@
 
 #include "tof2can.h"
 
+#define SENSOR_DATA_MAX_LENGTH 64
+
 struct SensorData {
     bool available;
 
     int     buffer_length;
-    int16_t buffer[64];
+    int16_t buffer[SENSOR_DATA_MAX_LENGTH];
 
     bool below_threshold;
     bool threshold_event;
